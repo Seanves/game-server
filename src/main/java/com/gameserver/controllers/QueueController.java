@@ -45,7 +45,7 @@ public class QueueController {
     }
 
     @GetMapping("/notify")
-    public DeferredResult<Boolean> notifyWhenGameFound(@RequestParam int id) {
+    public DeferredResult<Boolean> notifyWhenFound(@RequestParam int id) {
 
         DeferredResult<Boolean> deferredResult = new DeferredResult<>((long)1000 * 30, false);
         CompletableFuture.runAsync(()->{
