@@ -1,4 +1,4 @@
-package com.gameserver.util;
+package com.gameserver.game;
 
 import lombok.Synchronized;
 import org.springframework.stereotype.Component;
@@ -9,54 +9,54 @@ import java.util.*;
 public class GameQueue {
 
     private final Queue<Node> queue = new LinkedList<>();
-    private final Map<String,Node> map = new HashMap<>();
+    private final Map<Integer,Node> map = new HashMap<>();
     private final int TIMEOUT = 1000 * 30;
     private final Object $lock = new Object();
 
 
     @Synchronized
-    public void add(String ip) {
-        Node node = new Node(ip);
-        if(map.containsKey(node.value)) { throw new AlreadyInQueueException(node.value); }
+    public void add(int id) {
+        Node node = new Node(id);
+        if(map.containsKey(node.id)) { throw new AlreadyInQueueException(String.valueOf(node.id)); }
         queue.add(node);
-        map.put(node.value, node);
+        map.put(node.id, node);
     }
 
     @Synchronized
-    public String poll() {
+    public int poll() {
         Node polled = queue.poll();
-        map.remove(polled.value);
-        return polled.value;
+        map.remove(polled.id);
+        return polled.id;
     }
 
     @Synchronized
-    public String[] pollTwo() {
+    public int[] pollTwo() {
         if(this.size() >= 2) {
-            return new String[]{poll(), poll()};
+            return new int[]{poll(), poll()};
         }
         else { throw new RuntimeException("pollTwo() from size less than 2"); }
     }
 
     @Synchronized
-    public String peek() {
-        return queue.peek().value;
+    public int peek() {
+        return queue.peek().id;
     }
 
     @Synchronized
-    public void updateTime(String ip) {
-        Node node = map.get(ip);
+    public void updateTime(int id) {
+        Node node = map.get(id);
         if(node != null) { node.time = System.currentTimeMillis(); }
     }
 
     @Synchronized
     public void remove(Node node) {
         queue.remove(node);
-        map.remove(node.value);
+        map.remove(node.id);
     }
 
     @Synchronized
-    public boolean contains(String ip) {
-        return map.containsKey(ip);
+    public boolean contains(int id) {
+        return map.containsKey(id);
     }
 
     public int size() {
@@ -81,7 +81,7 @@ public class GameQueue {
                     for(Node node: map.values()) {
                         if(System.currentTimeMillis() > node.time + TIMEOUT) {
                             remove(node);
-                            System.out.println("timeouted " + node.value);
+                            System.out.println("timeouted " + node.id);
                         }
                     }
                 }
@@ -91,11 +91,11 @@ public class GameQueue {
 
 
     private static class Node {
-        final String value;
+        final int id;
         Long time;
 
-        Node(String value) {
-            this.value = value;
+        Node(int id) {
+            this.id = id;
             this.time = System.currentTimeMillis();
         }
 
@@ -104,17 +104,17 @@ public class GameQueue {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Node other = (Node) o;
-            return this.value.equals(other.value);
+            return this.id == other.id;
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(value);
+            return Objects.hash(id);
         }
 
         @Override
         public String toString() {
-            return value;
+            return String.valueOf(id);
         }
     }
 

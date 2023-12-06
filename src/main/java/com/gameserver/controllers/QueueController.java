@@ -7,22 +7,22 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 @RestController
-public class GameController {
+public class QueueController {
 
     private final GameService gameService;
 
     @Autowired
-    public GameController(GameService gameService) {
+    public QueueController(GameService gameService) {
         this.gameService = gameService;
     }
 
 
     @GetMapping("/add")
-    public boolean add(@RequestParam String ip) {
-        return gameService.add(ip);
+    public int add() {
+        int id = nextId();
+        return gameService.add(id) ?  id : -1;
     }
 
     @GetMapping("/queue")
@@ -32,28 +32,35 @@ public class GameController {
 
     @GetMapping("/games")
     public String games() {
-        return gameService.getIpGameMapToString();
+        return gameService.getPlayerGameMapToString();
     }
 
     @GetMapping("/status")
-    public String status(@RequestParam String ip) {
-        if(gameService.isInQueue(ip)) {
-            gameService.updateTime(ip);
+    public String status(@RequestParam int id) {
+        if(gameService.isInQueue(id)) {
+            gameService.updateTime(id);
             return "in queue";
         }
         return "not in queue";
     }
 
     @GetMapping("/notify")
-    public DeferredResult<Boolean> notifyWhenGameFound(@RequestParam String ip) {
+    public DeferredResult<Boolean> notifyWhenGameFound(@RequestParam int id) {
 
         DeferredResult<Boolean> deferredResult = new DeferredResult<>((long)1000 * 30, false);
         CompletableFuture.runAsync(()->{
-            while(gameService.isInQueue(ip)) {
+            while(gameService.isInQueue(id)) {
                 try { Thread.sleep(100); } catch(Exception e) { throw new RuntimeException(e); }
             }
-            deferredResult.setResult(gameService.isInGame(ip));
+            deferredResult.setResult(gameService.isInGame(id));
         });
         return deferredResult;
+    }
+
+
+    private int idCounter = 0;
+
+    private synchronized int nextId() {
+        return ++idCounter;
     }
 }
