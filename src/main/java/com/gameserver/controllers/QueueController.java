@@ -1,5 +1,6 @@
 package com.gameserver.controllers;
 
+import com.gameserver.responses.Status;
 import com.gameserver.services.GameService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,6 +26,11 @@ public class QueueController {
         return gameService.add(id) ?  id : -1;
     }
 
+    @GetMapping("leaveQueue")
+    public boolean leave(@RequestParam int id) {
+        return gameService.leaveQueue(id);
+    }
+
     @GetMapping("/queue")
     public String print() {
         return gameService.getQueueToString();
@@ -36,12 +42,9 @@ public class QueueController {
     }
 
     @GetMapping("/status")
-    public String status(@RequestParam int id) {
-        if(gameService.isInQueue(id)) {
-            gameService.updateTime(id);
-            return "in queue";
-        }
-        return "not in queue";
+    public Status status(@RequestParam int id) {
+        gameService.updateTime(id);
+        return new Status(gameService.isInQueue(id), gameService.isInGame(id));
     }
 
     @GetMapping("/notify")

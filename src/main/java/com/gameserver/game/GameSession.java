@@ -1,6 +1,9 @@
 package com.gameserver.game;
 
+import com.gameserver.responses.GameResponse;
+import lombok.Getter;
 
+@Getter
 public class GameSession {
 
     private int player1,
@@ -21,49 +24,49 @@ public class GameSession {
         this.player1points = 10;
         this.player2points = 10;
         this.choosingPlayer = player1;
-        this.won = -1;
         this.stage = CHOOSING;
+        this.won = -1;
     }
 
 
-    public String makeMoveChoose(int id, int amount) {
-        if(won!=-1) { return "Game ended, player " + won + " won"; }
-        if(id != choosingPlayer || stage != CHOOSING) { return "Not your choosing move"; }
-        if(amount <= 0) { return "Chosen less or equal to zero"; }
-        if(amount > currentPlayerPoints()) { return "Chosen more than have"; }
+    public GameResponse makeMoveChoose(int id, int amount) {
+        if(won!=-1) { return id==won? GameResponse.YOU_WON : GameResponse.YOU_LOSE; }
+        if(id != choosingPlayer || stage != CHOOSING) { return GameResponse.NOT_YOU_CHOOSING_MOVE; }
+        if(amount <= 0) { return GameResponse.CHOSEN_ZERO_OR_LESS; }
+        if(amount > getChoosingPlayerPoints()) { return GameResponse.CHOSEN_MORE_THAN_HAVE; }
 
         chosenNumber = amount;
         stage = GUESSING;
 
         checkIfWin();
-//        System.out.println(this);
-        return this.toString();
+        System.out.println(this);
+        return new GameResponse(id, this);
     }
 
-    public String makeMoveGuess(int id, boolean even) {
-        if(won!=-1) { return "Game ended, player " + won + " won"; }
-        if(id != otherPlayer() || stage != GUESSING) { return "Not your guessing move"; }
+    public GameResponse makeMoveGuess(int id, boolean even) {
+        if(won!=-1) { return id==won? GameResponse.YOU_WON : GameResponse.YOU_LOSE; }
+        if(id != getGuessingPlayer() || stage != GUESSING) { return GameResponse.NOT_YOUR_GUESSING_MOVE; }
 
         boolean guessed =  even == (chosenNumber%2 == 0);
         if(guessed) {
-            changeOtherPlayerPoints(+chosenNumber);
-            changeCurrentPlayerPoints(-chosenNumber);
+            changeGuessingPlayerPoints(+chosenNumber);
+            changeChoosingPlayerPoints(-chosenNumber);
         }
         else {
-            changeCurrentPlayerPoints(+chosenNumber);
-            changeOtherPlayerPoints(-chosenNumber);
+            changeChoosingPlayerPoints(+chosenNumber);
+            changeGuessingPlayerPoints(-chosenNumber);
         }
 
-        choosingPlayer = otherPlayer();
+        choosingPlayer = getGuessingPlayer();
         stage = CHOOSING;
 
         checkIfWin();
-//        System.out.println(this);
-        return this.toString();
+        System.out.println(this);
+        return new GameResponse(id, this);
     }
 
 
-    private void changeCurrentPlayerPoints(int n) {
+    private void changeChoosingPlayerPoints(int n) {
         if(choosingPlayer == player1) {
             player1points += Math.min(n, player2points);
         }
@@ -72,7 +75,7 @@ public class GameSession {
         }
     }
 
-    private void changeOtherPlayerPoints(int n) {
+    private void changeGuessingPlayerPoints(int n) {
         if(choosingPlayer == player1) {
             player2points += Math.min(n, player1points);
         }
@@ -85,36 +88,32 @@ public class GameSession {
     private void checkIfWin() {
         if(player1points <= 0) {
             won = player2;
-            player1points = 0;
         }
         else if(player2points <= 0) {
             won = player1;
-            player2points = 0;
         }
     }
 
 
-    private int otherPlayer() {
-        return choosingPlayer ==player1 ? player2 : player1;
+    public int getGuessingPlayer() { return choosingPlayer==player1 ? player2 : player1; }
+
+    public int getChoosingPlayerPoints() {
+        return choosingPlayer==player1 ? player1points : player2points;
     }
 
-    private int currentPlayerPoints() {
-        return choosingPlayer ==player1 ? player1points : player2points;
-    }
-
-    private int otherPlayerPoints() {
-        return choosingPlayer ==player1 ? player2points : player1points;
+    public int getGuessingPlayerPoints() {
+        return choosingPlayer==player1 ? player2points : player1points;
     }
 
 
     @Override
     public String toString() {
-        return "GameSession{" + "\n" +
-                "player1points=" + player1points + "\n" +
-                ", player2points=" + player2points + "\n" +
-                ", choosingPlayer=" + choosingPlayer + "\n" +
-                ", chosenNumber=" + chosenNumber + "\n" +
-                ", stage=" + (stage==1? "choosing" : "guessing") + "\n" +
+        return "GameSession{" + "\n  " +
+                "player1points=" + player1points + ",\n  " +
+                "player2points=" + player2points + ",\n  " +
+                "choosingPlayer=" + choosingPlayer + ",\n  " +
+                "chosenNumber=" + chosenNumber + ",\n  " +
+                "stage=" + (stage==1? "choosing" : "guessing") + "\n" +
                 '}';
     }
 }

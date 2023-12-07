@@ -1,5 +1,6 @@
 package com.gameserver.controllers;
 
+import com.gameserver.responses.GameResponse;
 import com.gameserver.services.GameService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,12 +19,22 @@ public class GameController {
 
 
     @GetMapping("makeChoose")
-    public String makeMoveChoose(@RequestParam int id, @RequestParam int amount) {
-        return gameService.makeChoose(id, amount);
+    public GameResponse makeMoveChoose(@RequestParam int id, @RequestParam int amount) {
+        return gameService.makeMoveChoose(id, amount);
     }
 
     @GetMapping("makeGuess")
-    public String makeMoveGuess(@RequestParam int id, @RequestParam boolean even) {
-        return gameService.makeGuess(id, even);
+    public GameResponse makeMoveGuess(@RequestParam int id, @RequestParam boolean even) {
+        return gameService.makeMoveGuess(id, even);
+    }
+
+    @GetMapping("gameStatus")
+    public GameResponse status(@RequestParam int id) {
+        return gameService.status(id);
+    }
+
+    @GetMapping("leaveGame")
+    public boolean leave(@RequestParam int id) {
+        return gameService.leaveGame(id);
     }
 }

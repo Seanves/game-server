@@ -2,6 +2,7 @@ package com.gameserver.services;
 
 import com.gameserver.game.GameQueue;
 import com.gameserver.game.GameSession;
+import com.gameserver.responses.GameResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.HashMap;
@@ -42,6 +43,14 @@ public class GameService {
         return false;
     }
 
+    public boolean leaveQueue(int id) {
+        return queue.remove(id);
+    }
+
+    public boolean leaveGame(int id) {
+        return playerGameMap.remove(id) !=null;
+    }
+
     public int peek() { return queue.peek(); }
 
     public int size() { return queue.size(); }
@@ -71,13 +80,18 @@ public class GameService {
     }
 
 
-    public String makeChoose(int id, int amount) {
+    public GameResponse makeMoveChoose(int id, int amount) {
         GameSession game = playerGameMap.get(id);
-        return game!=null? game.makeMoveChoose(id, amount) : "No game with this id";
+        return game!=null? game.makeMoveChoose(id, amount) : GameResponse.NO_GAME;
     }
 
-    public String makeGuess(int id, boolean even) {
+    public GameResponse makeMoveGuess(int id, boolean even) {
         GameSession game = playerGameMap.get(id);
-        return game!=null? game.makeMoveGuess(id, even) : "No game with this id";
+        return game!=null? game.makeMoveGuess(id, even) : GameResponse.NO_GAME;
+    }
+
+    public GameResponse status(int id) {
+        GameSession game = playerGameMap.get(id);
+        return game!=null? new GameResponse(id, game) : GameResponse.NO_GAME;
     }
 }

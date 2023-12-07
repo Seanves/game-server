@@ -55,6 +55,17 @@ public class GameQueue {
     }
 
     @Synchronized
+    public boolean remove(int id) {
+        Node node = map.get(id);
+        if(node != null) {
+            queue.remove(node);
+            map.remove(node.id);
+            return true;
+        }
+        return false;
+    }
+
+    @Synchronized
     public boolean contains(int id) {
         return map.containsKey(id);
     }
