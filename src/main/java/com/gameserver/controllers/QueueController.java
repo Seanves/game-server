@@ -47,10 +47,10 @@ public class QueueController {
         return new Status(gameService.isInQueue(id), gameService.isInGame(id));
     }
 
-    @GetMapping("/notify")
+    @GetMapping("/notifyWhenFound")
     public DeferredResult<Boolean> notifyWhenFound(@RequestParam int id) {
 
-        DeferredResult<Boolean> deferredResult = new DeferredResult<>((long)1000 * 30, false);
+        DeferredResult<Boolean> deferredResult = new DeferredResult<>((long)1000 * 60 * 60, false);
         CompletableFuture.runAsync(()->{
             while(gameService.isInQueue(id)) {
                 try { Thread.sleep(100); } catch(Exception e) { throw new RuntimeException(e); }

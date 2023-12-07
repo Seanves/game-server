@@ -15,8 +15,8 @@ public class GameSession {
                 won;
 
     private byte stage;
-    private final byte CHOOSING = 1,
-                       GUESSING = 2;
+    public final byte CHOOSING = 1,
+                      GUESSING = 2;
 
     public GameSession(int player1, int player2) {
         this.player1 = player1;
@@ -30,10 +30,10 @@ public class GameSession {
 
 
     public GameResponse makeMoveChoose(int id, int amount) {
-        if(won!=-1) { return id==won? GameResponse.YOU_WON : GameResponse.YOU_LOSE; }
-        if(id != choosingPlayer || stage != CHOOSING) { return GameResponse.NOT_YOU_CHOOSING_MOVE; }
-        if(amount <= 0) { return GameResponse.CHOSEN_ZERO_OR_LESS; }
-        if(amount > getChoosingPlayerPoints()) { return GameResponse.CHOSEN_MORE_THAN_HAVE; }
+        if(won!=-1) { return new GameResponse(false, "Game ended, " + (id==won? "you won" : "you lose"), id, this); }
+        if(id != choosingPlayer || stage != CHOOSING) { return new GameResponse(false, "Not your choosing move", id, this); }
+        if(amount <= 0) { return new GameResponse(false, "Chosen less or equal to zero", id, this); }
+        if(amount > getChoosingPlayerPoints()) { return new GameResponse(false, "Chosen more than have", id, this); }
 
         chosenNumber = amount;
         stage = GUESSING;
@@ -44,8 +44,8 @@ public class GameSession {
     }
 
     public GameResponse makeMoveGuess(int id, boolean even) {
-        if(won!=-1) { return id==won? GameResponse.YOU_WON : GameResponse.YOU_LOSE; }
-        if(id != getGuessingPlayer() || stage != GUESSING) { return GameResponse.NOT_YOUR_GUESSING_MOVE; }
+        if(won!=-1) { return new GameResponse(false, "Game ended, " + (id==won? "you won" : "you lose"), id, this); }
+        if(id != getGuessingPlayer() || stage != GUESSING) { return new GameResponse(false, "Not your guessing move", id, this); }
 
         boolean guessed =  even == (chosenNumber%2 == 0);
         if(guessed) {

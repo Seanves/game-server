@@ -79,6 +79,12 @@ public class GameService {
         return playerGameMap.containsKey(id);
     }
 
+    public boolean isMyMove(int id) {
+        GameSession game = playerGameMap.get(id);
+        return game.getStage()==game.CHOOSING && id==game.getChoosingPlayer() ||
+               game.getStage()==game.GUESSING && id==game.getGuessingPlayer();
+    }
+
 
     public GameResponse makeMoveChoose(int id, int amount) {
         GameSession game = playerGameMap.get(id);
