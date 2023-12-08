@@ -39,7 +39,6 @@ public class GameSession {
         stage = GUESSING;
 
         checkIfWin();
-        System.out.println(this);
         return new GameResponse(id, this);
     }
 
@@ -49,38 +48,37 @@ public class GameSession {
 
         boolean guessed =  even == (chosenNumber%2 == 0);
         if(guessed) {
-            changeGuessingPlayerPoints(+chosenNumber);
             changeChoosingPlayerPoints(-chosenNumber);
+            changeGuessingPlayerPoints(+chosenNumber);
         }
         else {
-            changeChoosingPlayerPoints(+chosenNumber);
-            changeGuessingPlayerPoints(-chosenNumber);
+            changeChoosingPlayerPoints(+Math.min(chosenNumber, getGuessingPlayerPoints()));
+            changeGuessingPlayerPoints(-Math.min(chosenNumber, getGuessingPlayerPoints()));
         }
 
         choosingPlayer = getGuessingPlayer();
         stage = CHOOSING;
 
         checkIfWin();
-        System.out.println(this);
         return new GameResponse(id, this);
     }
 
 
     private void changeChoosingPlayerPoints(int n) {
         if(choosingPlayer == player1) {
-            player1points += Math.min(n, player2points);
+            player1points += n;
         }
         else {
-            player2points += Math.min(n, player1points);
+            player2points += n;
         }
     }
 
     private void changeGuessingPlayerPoints(int n) {
         if(choosingPlayer == player1) {
-            player2points += Math.min(n, player1points);
+            player2points += n;
         }
         else {
-            player1points += Math.min(n, player2points);
+            player1points += n;
         }
     }
 

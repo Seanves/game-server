@@ -2,6 +2,8 @@ package com.gameserver.services;
 
 import com.gameserver.game.GameQueue;
 import com.gameserver.game.GameSession;
+import com.gameserver.requests.ChooseMove;
+import com.gameserver.requests.GuessMove;
 import com.gameserver.responses.GameResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -35,12 +37,8 @@ public class GameService {
     }
 
 
-    public boolean add(int id){
-        if(!queue.contains(id) && !playerGameMap.containsKey(id)) {
-            queue.add(id);
-            return true;
-        }
-        return false;
+    public void add(int id){
+        queue.add(id);
     }
 
     public boolean leaveQueue(int id) {
@@ -86,14 +84,14 @@ public class GameService {
     }
 
 
-    public GameResponse makeMoveChoose(int id, int amount) {
-        GameSession game = playerGameMap.get(id);
-        return game!=null? game.makeMoveChoose(id, amount) : GameResponse.NO_GAME;
+    public GameResponse makeMoveChoose(ChooseMove move) {
+        GameSession game = playerGameMap.get(move.getId());
+        return game!=null? game.makeMoveChoose(move.getId(), move.getAmount()) : GameResponse.NO_GAME;
     }
 
-    public GameResponse makeMoveGuess(int id, boolean even) {
-        GameSession game = playerGameMap.get(id);
-        return game!=null? game.makeMoveGuess(id, even) : GameResponse.NO_GAME;
+    public GameResponse makeMoveGuess(GuessMove move) {
+        GameSession game = playerGameMap.get(move.getId());
+        return game!=null? game.makeMoveGuess(move.getId(), move.isEven()) : GameResponse.NO_GAME;
     }
 
     public GameResponse status(int id) {

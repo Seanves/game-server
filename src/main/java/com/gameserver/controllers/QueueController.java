@@ -3,8 +3,8 @@ package com.gameserver.controllers;
 import com.gameserver.responses.Status;
 import com.gameserver.services.GameService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
 import java.util.concurrent.CompletableFuture;
@@ -20,35 +20,31 @@ public class QueueController {
     }
 
 
-    @GetMapping("/add")
-    public int add() {
+    @PostMapping("/find")
+    public int find() {
         int id = nextId();
-        return gameService.add(id) ?  id : -1;
+        gameService.add(id);
+        return id;
     }
 
-    @GetMapping("leaveQueue")
-    public boolean leave(@RequestParam int id) {
+    @PostMapping("/leaveQueue")
+    public boolean leave(@RequestBody int id) {
         return gameService.leaveQueue(id);
     }
 
-    @GetMapping("/queue")
+    @PostMapping("/queue")
     public String print() {
         return gameService.getQueueToString();
     }
 
-    @GetMapping("/games")
-    public String games() {
-        return gameService.getPlayerGameMapToString();
-    }
-
-    @GetMapping("/status")
-    public Status status(@RequestParam int id) {
+    @PostMapping("/status")
+    public Status status(@RequestBody int id) {
         gameService.updateTime(id);
         return new Status(gameService.isInQueue(id), gameService.isInGame(id));
     }
 
-    @GetMapping("/notifyWhenFound")
-    public DeferredResult<Boolean> notifyWhenFound(@RequestParam int id) {
+    @PostMapping("/notifyWhenFound")
+    public DeferredResult<Boolean> notifyWhenFound(@RequestBody int id) {
 
         DeferredResult<Boolean> deferredResult = new DeferredResult<>((long)1000 * 60 * 60, false);
         CompletableFuture.runAsync(()->{

@@ -1,10 +1,13 @@
 package com.gameserver.controllers;
 
 import com.gameserver.game.GameSession;
+import com.gameserver.requests.ChooseMove;
+import com.gameserver.requests.GuessMove;
 import com.gameserver.responses.GameResponse;
 import com.gameserver.services.GameService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
@@ -22,28 +25,28 @@ public class GameController {
     }
 
 
-    @GetMapping("makeChoose")
-    public GameResponse makeMoveChoose(@RequestParam int id, @RequestParam int amount) {
-        return gameService.makeMoveChoose(id, amount);
+    @PostMapping("/makeChoose")
+    public GameResponse makeMoveChoose(@RequestBody ChooseMove move) {
+        return gameService.makeMoveChoose(move);
     }
 
-    @GetMapping("makeGuess")
-    public GameResponse makeMoveGuess(@RequestParam int id, @RequestParam boolean even) {
-        return gameService.makeMoveGuess(id, even);
+    @PostMapping("/makeGuess")
+    public GameResponse makeMoveGuess(@RequestBody GuessMove move) {
+        return gameService.makeMoveGuess(move);
     }
 
-    @GetMapping("gameStatus")
-    public GameResponse status(@RequestParam int id) {
+    @PostMapping("/gameStatus")
+    public GameResponse status(@RequestBody int id) {
         return gameService.status(id);
     }
 
-    @GetMapping("leaveGame")
-    public boolean leave(@RequestParam int id) {
+    @PostMapping("/leaveGame")
+    public boolean leave(@RequestBody int id) {
         return gameService.leaveGame(id);
     }
 
-    @GetMapping("/notifyWhenMove")
-    public DeferredResult<Boolean> notifyWhenMove(@RequestParam int id) {
+    @PostMapping("/notifyWhenMove")
+    public DeferredResult<Boolean> notifyWhenMove(@RequestBody int id) {
 
         DeferredResult<Boolean> deferredResult = new DeferredResult<>((long)1000 * 60 * 2, false);
         CompletableFuture.runAsync(()->{
@@ -53,5 +56,10 @@ public class GameController {
             deferredResult.setResult(true);
         });
         return deferredResult;
+    }
+
+    @PostMapping("/games")
+    public String games() {
+        return gameService.getPlayerGameMapToString();
     }
 }
