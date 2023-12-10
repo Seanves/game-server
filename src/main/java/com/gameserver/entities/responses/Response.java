@@ -1,4 +1,4 @@
-package com.gameserver.responses;
+package com.gameserver.entities.responses;
 
 
 public record Response(boolean success, String message) {

@@ -1,14 +1,12 @@
 package com.gameserver.controllers;
 
-import com.gameserver.game.GameSession;
-import com.gameserver.requests.ChooseMove;
-import com.gameserver.requests.GuessMove;
-import com.gameserver.responses.GameResponse;
+import com.gameserver.entities.requests.ChooseMove;
+import com.gameserver.entities.requests.GuessMove;
+import com.gameserver.entities.responses.GameResponse;
 import com.gameserver.services.GameService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
 

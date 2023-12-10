@@ -1,6 +1,6 @@
 package com.gameserver.game;
 
-import com.gameserver.responses.GameResponse;
+import com.gameserver.entities.responses.GameResponse;
 import lombok.Getter;
 
 @Getter

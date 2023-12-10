@@ -1,4 +1,4 @@
-package com.gameserver.requests;
+package com.gameserver.entities.requests;
 
 import lombok.Data;
 

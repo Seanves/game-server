@@ -2,9 +2,9 @@ package com.gameserver.services;
 
 import com.gameserver.game.GameQueue;
 import com.gameserver.game.GameSession;
-import com.gameserver.requests.ChooseMove;
-import com.gameserver.requests.GuessMove;
-import com.gameserver.responses.GameResponse;
+import com.gameserver.entities.requests.ChooseMove;
+import com.gameserver.entities.requests.GuessMove;
+import com.gameserver.entities.responses.GameResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.HashMap;

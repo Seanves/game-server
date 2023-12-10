@@ -1,6 +1,6 @@
 package com.gameserver.controllers;
 
-import com.gameserver.responses.Status;
+import com.gameserver.entities.responses.Status;
 import com.gameserver.services.GameService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
