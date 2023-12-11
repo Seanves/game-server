@@ -1,65 +1,64 @@
 package com.gameserver.game;
 
-import lombok.Synchronized;
 import org.springframework.stereotype.Component;
 import java.util.*;
+import com.gameserver.entities.User;
 
 @Component
 // thread safe, O(1) contains, deletes after timeout
 public class GameQueue {
 
     private final Queue<Node> queue = new LinkedList<>();
-    private final Map<Integer,Node> map = new HashMap<>();
+    private final Map<User,Node> map = new HashMap<>();
     private final int TIMEOUT = 1000 * 30;
-    private final Object $lock = new Object();
 
 
-    public synchronized void add(int id) {
-        Node node = new Node(id);
-        if(map.containsKey(node.id)) { throw new AlreadyInQueueException(String.valueOf(node.id)); }
+    public synchronized void add(User user) {
+        Node node = new Node(user);
+        if(map.containsKey(user)) { throw new AlreadyInQueueException(String.valueOf(node.user)); }
         queue.add(node);
-        map.put(node.id, node);
+        map.put(user, node);
     }
 
-    public synchronized int poll() {
+    public synchronized User poll() {
         Node polled = queue.poll();
-        map.remove(polled.id);
-        return polled.id;
+        map.remove(polled.user);
+        return polled.user;
     }
 
-    public synchronized int[] pollTwo() {
+    public synchronized User[] pollTwo() {
         if(this.size() >= 2) {
-            return new int[]{poll(), poll()};
+            return new User[]{poll(), poll()};
         }
         else { throw new RuntimeException("pollTwo() from size less than 2"); }
     }
 
-    public synchronized int peek() {
-        return queue.peek().id;
+    public synchronized User peek() {
+        return queue.peek().user;
     }
 
-    public synchronized void updateTime(int id) {
-        Node node = map.get(id);
+    public synchronized void updateTime(User user) {
+        Node node = map.get(user);
         if(node != null) { node.time = System.currentTimeMillis(); }
     }
 
     public synchronized void remove(Node node) {
         queue.remove(node);
-        map.remove(node.id);
+        map.remove(node.user);
     }
 
-    public synchronized boolean remove(int id) {
-        Node node = map.get(id);
+    public synchronized boolean remove(User user) {
+        Node node = map.get(user);
         if(node != null) {
             queue.remove(node);
-            map.remove(node.id);
+            map.remove(node.user);
             return true;
         }
         return false;
     }
 
-    public synchronized boolean contains(int id) {
-        return map.containsKey(id);
+    public synchronized boolean contains(User user) {
+        return map.containsKey(user);
     }
 
     public int size() {
@@ -84,7 +83,7 @@ public class GameQueue {
                     for(Node node: map.values()) {
                         if(System.currentTimeMillis() > node.time + TIMEOUT) {
                             remove(node);
-                            System.out.println("timeouted " + node.id);
+                            System.out.println("timeouted " + node.user.getId());
                         }
                     }
                 }
@@ -94,36 +93,36 @@ public class GameQueue {
 
 
     private static class Node {
-        final int id;
+        final User user;
         Long time;
 
-        Node(int id) {
-            this.id = id;
+        Node(User user) {
+            this.user = user;
             this.time = System.currentTimeMillis();
         }
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if(this == o) return true;
+            if(o == null || getClass() != o.getClass()) return false;
             Node other = (Node) o;
-            return this.id == other.id;
+            return this.user.equals(other.user);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(id);
+            return this.user.hashCode();
         }
 
         @Override
         public String toString() {
-            return String.valueOf(id);
+            return String.valueOf(user.getId());
         }
     }
 
     private static class AlreadyInQueueException extends RuntimeException {
-        AlreadyInQueueException(String message) {
-            super("value " + message);
+        AlreadyInQueueException(String value) {
+            super("value " + value);
         }
     }
 

@@ -9,12 +9,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
+import com.gameserver.entities.User;
 
 @Service
 public class GameService {
 
     private final GameQueue queue;
-    private final Map<Integer,GameSession> playerGameMap;
+    private final Map<User,GameSession> playerGameMap;
 
     @Autowired
     public GameService(GameQueue queue){
@@ -25,10 +26,10 @@ public class GameService {
             synchronized(this) {
                 while(true) {
                     if (queue.size() >= 2) {
-                        int[] players = queue.pollTwo();
-                        GameSession newGameSession = new GameSession(players[0], players[1]);
-                        playerGameMap.put(players[0], newGameSession);
-                        playerGameMap.put(players[1], newGameSession);
+                        User[] users = queue.pollTwo();
+                        GameSession newGameSession = new GameSession(users[0], users[1]);
+                        playerGameMap.put(users[0], newGameSession);
+                        playerGameMap.put(users[1], newGameSession);
                     }
                     try { wait(100); } catch (InterruptedException e) { throw new RuntimeException(e); }
                 }
@@ -37,19 +38,19 @@ public class GameService {
     }
 
 
-    public void add(int id){
-        queue.add(id);
+    public void add(User user){
+        queue.add(user);
     }
 
-    public boolean leaveQueue(int id) {
-        return queue.remove(id);
+    public boolean leaveQueue(User user) {
+        return queue.remove(user);
     }
 
-    public boolean leaveGame(int id) {
-        return playerGameMap.remove(id) !=null;
+    public boolean leaveGame(User user) {
+        return playerGameMap.remove(user) !=null;
     }
 
-    public int peek() { return queue.peek(); }
+    public User peek() { return queue.peek(); }
 
     public int size() { return queue.size(); }
 
@@ -65,37 +66,38 @@ public class GameService {
         return playerGameMap.toString();
     }
 
-    public void updateTime(int id) {
-        queue.updateTime(id);
+    public void updateTime(User user) {
+        int id = user.getId();
+        queue.updateTime(user);
     }
 
-    public boolean isInQueue(int id) {
-        return queue.contains(id);
+    public boolean isInQueue(User user) {
+        return queue.contains(user);
     }
 
-    public boolean isInGame(int id) {
-        return playerGameMap.containsKey(id);
+    public boolean isInGame(User user) {
+        return playerGameMap.containsKey(user);
     }
 
-    public boolean isMyMove(int id) {
-        GameSession game = playerGameMap.get(id);
-        return game.getStage()==game.CHOOSING && id==game.getChoosingPlayer() ||
-               game.getStage()==game.GUESSING && id==game.getGuessingPlayer();
+    public boolean isMyMove(User user) {
+        GameSession game = playerGameMap.get(user);
+        return game.getStage()==game.CHOOSING && user.getId()==game.getChoosingPlayer() ||
+               game.getStage()==game.GUESSING && user.getId()==game.getGuessingPlayer();
     }
 
 
-    public GameResponse makeMoveChoose(ChooseMove move) {
-        GameSession game = playerGameMap.get(move.getId());
-        return game!=null? game.makeMoveChoose(move.getId(), move.getAmount()) : GameResponse.NO_GAME;
+    public GameResponse makeMoveChoose(User user, int amount) {
+        GameSession game = playerGameMap.get(user);
+        return game!=null? game.makeMoveChoose(user.getId(),amount) : GameResponse.NO_GAME;
     }
 
-    public GameResponse makeMoveGuess(GuessMove move) {
-        GameSession game = playerGameMap.get(move.getId());
-        return game!=null? game.makeMoveGuess(move.getId(), move.isEven()) : GameResponse.NO_GAME;
+    public GameResponse makeMoveGuess(User user, boolean even) {
+        GameSession game = playerGameMap.get(user);
+        return game!=null? game.makeMoveGuess(user.getId(), even) : GameResponse.NO_GAME;
     }
 
-    public GameResponse status(int id) {
-        GameSession game = playerGameMap.get(id);
-        return game!=null? new GameResponse(id, game) : GameResponse.NO_GAME;
+    public GameResponse status(User user) {
+        GameSession game = playerGameMap.get(user);
+        return game!=null? new GameResponse(user.getId(), game) : GameResponse.NO_GAME;
     }
 }

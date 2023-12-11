@@ -20,4 +20,13 @@ public record GameResponse(boolean success, String message, byte stage,
                       game.getStage()==GUESSING && id==game.getGuessingPlayer(),
              id==game.getChoosingPlayer() ? game.getChoosingPlayerPoints() : game.getGuessingPlayerPoints());
     }
+
+
+    public boolean isGameOver() {
+        return yourPoints>=20 || yourPoints<=0;
+    }
+
+    public boolean isWin() {
+        return yourPoints>=20;
+    }
 }

@@ -1,6 +1,7 @@
 package com.gameserver.game;
 
 import com.gameserver.entities.responses.GameResponse;
+import com.gameserver.entities.User;
 import lombok.Getter;
 
 @Getter
@@ -18,9 +19,14 @@ public class GameSession {
     public final byte CHOOSING = 1,
                       GUESSING = 2;
 
-    public GameSession(int player1, int player2) {
-        this.player1 = player1;
-        this.player2 = player2;
+    private final User user1,
+                       user2;
+
+    public GameSession(User user1, User user2) {
+        this.user1 = user1;
+        this.user2 = user2;
+        this.player1 = user1.getId();
+        this.player2 = user2.getId();
         this.player1points = 10;
         this.player2points = 10;
         this.choosingPlayer = player1;

@@ -1,10 +1,14 @@
 package com.gameserver.controllers;
 
+import com.gameserver.entities.User;
 import com.gameserver.entities.requests.ChooseMove;
 import com.gameserver.entities.requests.GuessMove;
 import com.gameserver.entities.responses.GameResponse;
+import com.gameserver.entities.responses.Response;
+import com.gameserver.security.MyUserDetails;
 import com.gameserver.services.GameService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,34 +28,32 @@ public class GameController {
 
 
     @PostMapping("/makeChoose")
-    public GameResponse makeMoveChoose(@RequestBody ChooseMove move) {
-        return gameService.makeMoveChoose(move);
-    }
+    public GameResponse makeMoveChoose(@RequestBody int amount) { return gameService.makeMoveChoose(getUser(), amount); }
 
     @PostMapping("/makeGuess")
-    public GameResponse makeMoveGuess(@RequestBody GuessMove move) {
-        return gameService.makeMoveGuess(move);
+    public GameResponse makeMoveGuess(@RequestBody boolean even) {
+        return gameService.makeMoveGuess(getUser(), even);
     }
 
     @PostMapping("/gameStatus")
-    public GameResponse status(@RequestBody int id) {
-        return gameService.status(id);
+    public GameResponse status() {
+        return gameService.status(getUser());
     }
 
     @PostMapping("/leaveGame")
-    public boolean leave(@RequestBody int id) {
-        return gameService.leaveGame(id);
+    public Response leave() {
+        return gameService.leaveGame(getUser()) ? Response.OK : new Response(false, "not in game");
     }
 
     @PostMapping("/notifyWhenMove")
-    public DeferredResult<Boolean> notifyWhenMove(@RequestBody int id) {
-
-        DeferredResult<Boolean> deferredResult = new DeferredResult<>((long)1000 * 60 * 2, false);
+    public DeferredResult<Response> notifyWhenMove() {
+        User user = getUser();
+        DeferredResult<Response> deferredResult = new DeferredResult<>((long)1000 * 60 * 2, new Response(false, "timeout"));
         CompletableFuture.runAsync(()->{
-            while(!gameService.isMyMove(id)) {
+            while(!gameService.isMyMove(user)) {
                 try { Thread.sleep(100); } catch(Exception e) { throw new RuntimeException(e); }
             }
-            deferredResult.setResult(true);
+            deferredResult.setResult(new Response(gameService.isMyMove(user)));
         });
         return deferredResult;
     }
@@ -59,5 +61,10 @@ public class GameController {
     @PostMapping("/games")
     public String games() {
         return gameService.getPlayerGameMapToString();
+    }
+
+
+    private User getUser() {
+        return ((MyUserDetails)(SecurityContextHolder.getContext().getAuthentication().getPrincipal())).getUser();
     }
 }

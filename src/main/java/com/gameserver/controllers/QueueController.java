@@ -1,13 +1,16 @@
 package com.gameserver.controllers;
 
+import com.gameserver.entities.responses.Response;
 import com.gameserver.entities.responses.Status;
+import com.gameserver.security.MyUserDetails;
 import com.gameserver.services.GameService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
 import java.util.concurrent.CompletableFuture;
+import com.gameserver.entities.User;
 
 @RestController
 public class QueueController {
@@ -21,15 +24,23 @@ public class QueueController {
 
 
     @PostMapping("/find")
-    public int find() {
-        int id = nextId();
-        gameService.add(id);
-        return id;
+    public Response find() {
+        User user = getUser();
+        if(gameService.isInQueue(user)) {
+            return new Response(false, "already in queue");
+        }
+        else if(gameService.isInGame(user)) {
+            return new Response(false, "already in game");
+        }
+        else {
+            gameService.add(user);
+            return Response.OK;
+        }
     }
 
     @PostMapping("/leaveQueue")
-    public boolean leave(@RequestBody int id) {
-        return gameService.leaveQueue(id);
+    public Response leave() {
+        return gameService.leaveQueue(getUser()) ? Response.OK : new Response(false, "not in queue");
     }
 
     @PostMapping("/queue")
@@ -38,28 +49,34 @@ public class QueueController {
     }
 
     @PostMapping("/status")
-    public Status status(@RequestBody int id) {
-        gameService.updateTime(id);
-        return new Status(gameService.isInQueue(id), gameService.isInGame(id));
+    public Status status() {
+        User user = getUser();
+        gameService.updateTime(user);
+        return new Status(gameService.isInQueue(user), gameService.isInGame(user));
     }
 
     @PostMapping("/notifyWhenFound")
-    public DeferredResult<Boolean> notifyWhenFound(@RequestBody int id) {
-
-        DeferredResult<Boolean> deferredResult = new DeferredResult<>((long)1000 * 60 * 60, false);
+    public DeferredResult<Response> notifyWhenFound() {
+        User user = getUser();
+        DeferredResult<Response> deferredResult = new DeferredResult<>((long)1000 * 60 * 60, new Response(false, "timeout"));
         CompletableFuture.runAsync(()->{
-            while(gameService.isInQueue(id)) {
+            while(gameService.isInQueue(user)) {
                 try { Thread.sleep(100); } catch(Exception e) { throw new RuntimeException(e); }
             }
-            deferredResult.setResult(gameService.isInGame(id));
+            deferredResult.setResult(new Response(gameService.isInGame(user)));
         });
         return deferredResult;
     }
 
 
-    private int idCounter = 0;
+//    private int idCounter = 0;
+//
+//    private synchronized int nextId() {
+//        return ++idCounter;
+//    }
 
-    private synchronized int nextId() {
-        return ++idCounter;
+
+    private User getUser() {
+        return ((MyUserDetails)(SecurityContextHolder.getContext().getAuthentication().getPrincipal())).getUser();
     }
 }

@@ -29,7 +29,7 @@ public class JWTFilter extends OncePerRequestFilter {
         if(auth != null && !auth.isBlank() && auth.startsWith("Bearer ")) {
             String jwt = auth.substring(7);
             if(jwt.isBlank()) {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Wrong jwt token");
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Wrong jwt token");
             }
             else {
                 try {
@@ -43,7 +43,7 @@ public class JWTFilter extends OncePerRequestFilter {
                         SecurityContextHolder.getContext().setAuthentication(authToken);
                     }
                 } catch(Exception e) {
-                    response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Wrong jwt token");
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Wrong jwt token");
                 }
             }
         }
