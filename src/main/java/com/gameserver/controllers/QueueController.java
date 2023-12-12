@@ -57,7 +57,7 @@ public class QueueController {
 
     @PostMapping("/notifyWhenFound")
     public DeferredResult<Response> notifyWhenFound() {
-        User user = getUser();
+        final User user = getUser();
         DeferredResult<Response> deferredResult = new DeferredResult<>((long)1000 * 60 * 60, new Response(false, "timeout"));
         CompletableFuture.runAsync(()->{
             while(gameService.isInQueue(user)) {

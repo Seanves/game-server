@@ -1,6 +1,7 @@
 package com.gameserver.services;
 
 import com.gameserver.entities.User;
+import com.gameserver.entities.auth.AuthResponse;
 import com.gameserver.repositories.UserRepository;
 import com.gameserver.security.JWTManager;
 import com.gameserver.security.MyUserDetails;
@@ -16,15 +17,15 @@ import java.util.Optional;
 public class AuthenticationService implements UserDetailsService {
 
     @Autowired
-    private UserRepository userRepository;
+    private JWTManager jwtManager;
 
     @Autowired
-    private JWTManager jwtManager;
+    private UserService userService;
 
 
     @Override
     public UserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
-        Optional<User> optional = userRepository.findByLogin(login);
+        Optional<User> optional = userService.getUserByLogin(login);
         if(optional.isEmpty()) {
             throw new UsernameNotFoundException("User not found");
         }
@@ -33,31 +34,23 @@ public class AuthenticationService implements UserDetailsService {
     }
 
 
-    public Map<String,String> register(User user) {
-        if(isExists(user.getLogin())) {
-            return Map.of("Error", "Login already taken");
+    public AuthResponse register(User user) {
+        if(userService.isExists(user.getLogin())) {
+            return new AuthResponse(false, "Login already taken", null);
         }
-        userRepository.save(user);
+        userService.save(user);
 
         String token = jwtManager.generate(user.getLogin());
-        return Map.of("token", token);
+        return new AuthResponse(true, "ok", token);
     }
 
 
-    public Map<String, String> getNewToken(String login) {
-        if(isExists(login)) {
+    public AuthResponse getNewToken(String login) {
+        if(userService.isExists(login)) {
             String token = jwtManager.generate(login);
-            return Map.of("token", token);
+            return new AuthResponse(true, "ok", token);
         }
-        return Map.of("Error", "Login doesnt exit");
+        return new AuthResponse(false, "Login doesnt exit", null);
     }
 
-
-    public boolean isExists(String login) {
-        return userRepository.existsByLogin(login);
-    }
-
-    public Optional<User> getUserByLogin(String login) {
-        return userRepository.findByLogin(login);
-    }
 }

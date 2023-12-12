@@ -30,18 +30,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf().disable().authorizeHttpRequests()
-                .requestMatchers("/login","/register", "/error").permitAll()
+                .csrf().disable()
+                .authorizeHttpRequests()
+                .requestMatchers("/login","/register").permitAll()
                 .anyRequest().authenticated()
-//                .and().formLogin().loginPage("/logins")
-//                .loginProcessingUrl("/process_login")
-//                .defaultSuccessUrl("/", true).permitAll()
-//                .and().logout().logoutUrl("/process_logout")
-//                .logoutSuccessUrl("/login")
-                .and().sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-
-        http
+                .and()
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

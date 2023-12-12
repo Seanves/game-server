@@ -1,9 +1,9 @@
 package com.gameserver.controllers;
 
 import com.gameserver.entities.User;
-import com.gameserver.entities.requests.ChooseMove;
-import com.gameserver.entities.requests.GuessMove;
 import com.gameserver.entities.responses.GameResponse;
+import com.gameserver.entities.responses.Opponent;
+import com.gameserver.entities.responses.GameResult;
 import com.gameserver.entities.responses.Response;
 import com.gameserver.security.MyUserDetails;
 import com.gameserver.services.GameService;
@@ -40,14 +40,20 @@ public class GameController {
         return gameService.status(getUser());
     }
 
-    @PostMapping("/leaveGame")
-    public Response leave() {
-        return gameService.leaveGame(getUser()) ? Response.OK : new Response(false, "not in game");
+    @PostMapping("/opponent")
+    public Opponent opponent() {
+        return gameService.getOpponent(getUser());
     }
+
+    @PostMapping("/leaveGame")
+    public GameResult leave() { return gameService.leaveGame(getUser()); }
+
+//    @PostMapping("/ratingChanges")
+//    public GameResult ratingChanges() { return gameService.getRatingChanges(getUser()); }
 
     @PostMapping("/notifyWhenMove")
     public DeferredResult<Response> notifyWhenMove() {
-        User user = getUser();
+        final User user = getUser();
         DeferredResult<Response> deferredResult = new DeferredResult<>((long)1000 * 60 * 2, new Response(false, "timeout"));
         CompletableFuture.runAsync(()->{
             while(!gameService.isMyMove(user)) {

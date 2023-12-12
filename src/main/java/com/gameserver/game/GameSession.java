@@ -2,6 +2,7 @@ package com.gameserver.game;
 
 import com.gameserver.entities.responses.GameResponse;
 import com.gameserver.entities.User;
+import com.gameserver.entities.responses.GameResult;
 import lombok.Getter;
 
 @Getter
@@ -22,7 +23,11 @@ public class GameSession {
     private final User user1,
                        user2;
 
-    public GameSession(User user1, User user2) {
+    private final OnSessionEndCallback callback;
+    private long endTime;
+    private int ratingChange;
+
+    public GameSession(User user1, User user2, OnSessionEndCallback callback) {
         this.user1 = user1;
         this.user2 = user2;
         this.player1 = user1.getId();
@@ -32,6 +37,7 @@ public class GameSession {
         this.choosingPlayer = player1;
         this.stage = CHOOSING;
         this.won = -1;
+        this.callback = callback;
     }
 
 
@@ -96,6 +102,22 @@ public class GameSession {
         else if(player2points <= 0) {
             won = player1;
         }
+        else { return; }
+        endSession();
+    }
+
+    public GameResult leave(int id) {
+        if(!isOver()) {
+            won =  id==player1? player2 : player1;
+            endSession();
+        }
+        return new GameResult(id==won, id==player1? user1.getRating() :
+                                                           user2.getRating(), ratingChange);
+    }
+
+    private void endSession() {
+        endTime = System.currentTimeMillis();
+        ratingChange = callback.onSessionEnd(this);
     }
 
 
@@ -109,6 +131,13 @@ public class GameSession {
         return choosingPlayer==player1 ? player2points : player1points;
     }
 
+    public User getWinner() { return won!=-1 ? won==player1? user1 : user2
+                                             : null; }
+
+    public User getLoser() { return won!=-1 ? won==player1? user2 : user1
+                                            : null; }
+
+    public boolean isOver() { return won!=-1; }
 
     @Override
     public String toString() {

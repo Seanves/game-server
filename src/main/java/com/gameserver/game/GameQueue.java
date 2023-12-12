@@ -83,7 +83,6 @@ public class GameQueue {
                     for(Node node: map.values()) {
                         if(System.currentTimeMillis() > node.time + TIMEOUT) {
                             remove(node);
-                            System.out.println("timeouted " + node.user.getId());
                         }
                     }
                 }
