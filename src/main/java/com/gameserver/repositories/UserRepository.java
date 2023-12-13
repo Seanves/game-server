@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
@@ -15,6 +17,7 @@ public interface UserRepository extends JpaRepository<User,Integer> {
     Optional<User> findByLoginAndPassword(String login, String password);
     Boolean existsByLogin(String login);
 
+    @Deprecated
     @Query(value =  "SELECT position " +
                     "FROM ( " +
                     "    SELECT id, RANK() OVER (ORDER BY rating DESC) AS position " +
@@ -22,4 +25,19 @@ public interface UserRepository extends JpaRepository<User,Integer> {
                     ") AS ranked_users " +
                     "WHERE id = :userId", nativeQuery = true)
     Integer rank(@Param("userId") int userId);
+
+    @Query(value = "SELECT id, position " +
+            "FROM ( " +
+            "SELECT id, RANK() OVER (ORDER BY rating DESC) AS position " +
+            "FROM Users " +
+            ") AS ranked_users", nativeQuery = true)
+    List<Integer[]> ranks();
+
+    @Query(value = "SELECT position, nickname, rating " +
+                   "FROM ( " +
+                   "SELECT nickname, rating, RANK() OVER (ORDER BY rating DESC) AS position " +
+                   "FROM Users " +
+                   ") AS ranked_users " +
+                   "LIMIT 10", nativeQuery = true)
+    List<Object[]> top10ranks();
 }

@@ -9,23 +9,32 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.List;
 
 @RestController
 public class UserController {
 
+    private final UserService userService;
+
     @Autowired
-    private UserService userService;
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
 
 
-    @PostMapping("/changeNick")
-    public void changeNick(@RequestBody String nick) {
-        userService.changeNickname(((MyUserDetails)(SecurityContextHolder.getContext().getAuthentication().getPrincipal())).getUser(), nick);
+    @PostMapping("/changeNickname")
+    public void changeNick(@RequestBody String nickname) {
+        userService.changeNickname(getUser(), nickname);
     }
 
     @PostMapping("/stats")
     public Stats stats() {
-        User user = getUser();
-        return new Stats(user, userService.getRank(user));
+        return userService.stats(getUser());
+    }
+
+    @PostMapping("/top10")
+    public List<Object[]> top10Ranks() {
+        return userService.getTop10Ranks();
     }
 
 

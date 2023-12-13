@@ -88,8 +88,9 @@ public class GameService implements OnSessionEndCallback {
 
     public boolean isMyMove(User user) {
         GameSession game = playerGameMap.get(user);
-        return game.getStage()==game.CHOOSING && user.getId()==game.getChoosingPlayer() ||
-               game.getStage()==game.GUESSING && user.getId()==game.getGuessingPlayer();
+        return game.getWon()==-1 &&
+              (game.getStage()==game.CHOOSING && user.getId()==game.getChoosingPlayer() ||
+               game.getStage()==game.GUESSING && user.getId()==game.getGuessingPlayer());
     }
 
 
