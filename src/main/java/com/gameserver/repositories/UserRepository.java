@@ -14,29 +14,22 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User,Integer> {
     Optional<User> findById(int id);
     Optional<User> findByLogin(String login);
-    Optional<User> findByLoginAndPassword(String login, String password);
+//    Optional<User> findByLoginAndPassword(String login, String password);
     Boolean existsByLogin(String login);
+    Boolean existsById(int id);
 
-    @Deprecated
-    @Query(value =  "SELECT position " +
-                    "FROM ( " +
-                    "    SELECT id, RANK() OVER (ORDER BY rating DESC) AS position " +
-                    "    FROM Users " +
-                    ") AS ranked_users " +
-                    "WHERE id = :userId", nativeQuery = true)
-    Integer rank(@Param("userId") int userId);
 
     @Query(value = "SELECT id, position " +
-            "FROM ( " +
-            "SELECT id, RANK() OVER (ORDER BY rating DESC) AS position " +
-            "FROM Users " +
-            ") AS ranked_users", nativeQuery = true)
+                   "FROM ( " +
+                   "    SELECT id, RANK() OVER (ORDER BY rating DESC) AS position " +
+                   "    FROM Users " +
+                   ") AS ranked_users", nativeQuery = true)
     List<Integer[]> ranks();
 
     @Query(value = "SELECT position, nickname, rating " +
                    "FROM ( " +
-                   "SELECT nickname, rating, RANK() OVER (ORDER BY rating DESC) AS position " +
-                   "FROM Users " +
+                   "    SELECT nickname, rating, RANK() OVER (ORDER BY rating DESC) AS position " +
+                   "    FROM Users " +
                    ") AS ranked_users " +
                    "LIMIT 10", nativeQuery = true)
     List<Object[]> top10ranks();

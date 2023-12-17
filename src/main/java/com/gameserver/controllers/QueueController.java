@@ -79,4 +79,12 @@ public class QueueController {
     private User getUser() {
         return ((MyUserDetails)(SecurityContextHolder.getContext().getAuthentication().getPrincipal())).getUser();
     }
+
+//    private int getId() {
+//        return jwtManager.validateAndGetId(
+//                ((ServletRequestAttributes) RequestContextHolder
+//                        .getRequestAttributes())
+//                        .getRequest().getHeader("Authorization")
+//                        .substring(7));
+//    }
 }

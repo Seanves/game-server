@@ -1,6 +1,7 @@
 package com.gameserver.security;
 
 import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.gameserver.services.AuthenticationService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,7 +22,7 @@ public class JWTFilter extends OncePerRequestFilter {
     private JWTManager jwtManager;
 
     @Autowired
-    private UserDetailsService userDetailsService;
+    private AuthenticationService authenticationService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -34,11 +35,11 @@ public class JWTFilter extends OncePerRequestFilter {
                 }
                 else {
                     try {
-                        String username = jwtManager.validateAndRetrieveClaim(jwt);
-                        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                        int id = jwtManager.validateAndGetId(jwt);
+                        UserDetails userDetails = authenticationService.loadUserById(id);
 
                         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                                userDetails, userDetails.getPassword(), userDetails.getAuthorities());
+                                             userDetails, userDetails.getPassword(), userDetails.getAuthorities());
 
                         if (SecurityContextHolder.getContext().getAuthentication() == null) {
                             SecurityContextHolder.getContext().setAuthentication(authToken);

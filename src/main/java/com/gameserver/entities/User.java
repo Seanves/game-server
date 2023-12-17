@@ -55,18 +55,18 @@ public class User {
         return (double) wins / gamesPlayed * 100;
     }
 
+
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hash(id, login, nickname);
     }
 
     @Override
     public boolean equals(Object o) {
-        if(this == o) { return true; }
-        if(o == null) { return false; }
-        if(o instanceof Integer && ((Integer) o).intValue() == this.id) { return true; }
-        if(getClass() != o.getClass()){ return false; }
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
         User other = (User) o;
-        return this.id == other.id;
+        return id == other.id && Objects.equals(login, other.login) && Objects.equals(nickname, other.nickname);
     }
+
 }

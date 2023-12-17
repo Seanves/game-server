@@ -2,7 +2,6 @@ package com.gameserver.services;
 
 import com.gameserver.entities.User;
 import com.gameserver.entities.auth.AuthResponse;
-import com.gameserver.repositories.UserRepository;
 import com.gameserver.security.JWTManager;
 import com.gameserver.security.MyUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import java.util.Map;
+
 import java.util.Optional;
 
 @Service
@@ -25,7 +24,16 @@ public class AuthenticationService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
-        Optional<User> optional = userService.getUserByLogin(login);
+        Optional<User> optional = userService.getUser(login);
+        if(optional.isEmpty()) {
+            throw new UsernameNotFoundException("User not found");
+        }
+
+        return new MyUserDetails(optional.get());
+    }
+
+    public UserDetails loadUserById(int id) {
+        Optional<User> optional = userService.getUser(id);
         if(optional.isEmpty()) {
             throw new UsernameNotFoundException("User not found");
         }
@@ -40,14 +48,14 @@ public class AuthenticationService implements UserDetailsService {
         }
         userService.save(user);
 
-        String token = jwtManager.generate(user.getLogin());
+        String token = jwtManager.generate(user.getId());
         return new AuthResponse(true, "ok", token);
     }
 
 
-    public AuthResponse getNewToken(String login) {
-        if(userService.isExists(login)) {
-            String token = jwtManager.generate(login);
+    public AuthResponse getNewToken(int id) {
+        if(userService.isExists(id)) {
+            String token = jwtManager.generate(id);
             return new AuthResponse(true, "ok", token);
         }
         return new AuthResponse(false, "Login doesnt exit", null);

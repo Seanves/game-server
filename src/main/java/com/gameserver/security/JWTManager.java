@@ -14,26 +14,29 @@ import java.util.Date;
 public class JWTManager {
 
     @Value("${jwt_secret}")
-    private static String secret = "saltOIGD";
+    private String secret;
 
-    public static String generate(String login) {
+
+    public String generate(int id) {
+        System.out.println(secret);
         Date expDate = Date.from(ZonedDateTime.now().plusMinutes(60).toInstant());
 
         return JWT.create()
                   .withSubject("User details")
-                  .withClaim("login", login)
+                  .withClaim("id", id)
                   .withIssuedAt(new Date())
                   .withIssuer("server")
                   .withExpiresAt(expDate)
                   .sign(Algorithm.HMAC256(secret));
     }
 
-    public String validateAndRetrieveClaim(String token) throws JWTVerificationException {
+    public int  validateAndGetId(String token) throws JWTVerificationException {
         JWTVerifier verifier = JWT.require(Algorithm.HMAC256(secret))
                                   .withSubject("User details")
                                   .withIssuer("server")
                                   .build();
         DecodedJWT jwt = verifier.verify(token);
-        return jwt.getClaim("login").asString();
+        return jwt.getClaim("id").asInt();
     }
+
 }

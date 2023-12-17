@@ -37,7 +37,7 @@ public class GameController {
 
     @PostMapping("/gameStatus")
     public GameResponse status() {
-        return gameService.status(getUser());
+        return gameService.getStatus(getUser());
     }
 
     @PostMapping("/opponent")
