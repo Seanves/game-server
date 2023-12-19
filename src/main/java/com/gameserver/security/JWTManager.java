@@ -18,7 +18,6 @@ public class JWTManager {
 
 
     public String generate(int id) {
-        System.out.println(secret);
         Date expDate = Date.from(ZonedDateTime.now().plusMinutes(60).toInstant());
 
         return JWT.create()

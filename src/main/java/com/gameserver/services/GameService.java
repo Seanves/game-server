@@ -15,28 +15,13 @@ import com.gameserver.entities.User;
 @Service
 public class GameService {
 
-    private final GameQueue queue;
     private final Map<User,GameSession> userGameMap;
     private final UserRepository userRepository;
 
     @Autowired
-    public GameService(GameQueue queue, UserRepository userRepository){
-        this.queue = queue;
+    public GameService(UserRepository userRepository){
         this.userGameMap = new HashMap<>();
         this.userRepository = userRepository;
-
-        Thread matchmakingThread = new Thread( () -> {
-            while(true) {
-                if(queue.size() >= 2) {
-                    User[] users = queue.pollTwo();
-                    GameSession newGameSession = new GameSession(users[0], users[1], this::onSessionEnd);
-                    userGameMap.put(users[0], newGameSession);
-                    userGameMap.put(users[1], newGameSession);
-                }
-                try { Thread.sleep(200); } catch (InterruptedException e) { throw new RuntimeException(e); }
-            }
-        });
-        matchmakingThread.start();
 
         Thread gameDeletingThread = new Thread( () -> {
             while(true) {
@@ -48,12 +33,10 @@ public class GameService {
     }
 
 
-    public void add(User user){
-        queue.add(user);
-    }
-
-    public boolean leaveQueue(User user) {
-        return queue.remove(user);
+    public void createGameSession(User user1, User user2) {
+        GameSession newGameSession = new GameSession(user1, user2, this::onSessionEnd);
+        userGameMap.put(user1, newGameSession);
+        userGameMap.put(user2, newGameSession);
     }
 
     public GameResult leaveGame(User user) {
@@ -61,24 +44,6 @@ public class GameService {
         if(game==null) { return new GameResult(false, -1, -1); }
 
         return game.leave(user.getId());
-    }
-
-    public int size() { return queue.size(); }
-
-    public String getQueueToString() {
-        return queue.toString();
-    }
-
-    public String getPlayerGameMapToString() {
-        return userGameMap.toString();
-    }
-
-    public void updateTime(User user) {
-        queue.updateTime(user);
-    }
-
-    public boolean isInQueue(User user) {
-        return queue.contains(user);
     }
 
     public boolean isInGame(User user) {
@@ -123,7 +88,11 @@ public class GameService {
 //        return new GameResult(-1, -1);
 //    }
 
-    public int onSessionEnd(GameSession game) {
+    public String getPlayerGameMapToString() {
+        return userGameMap.toString();
+    }
+
+    private int onSessionEnd(GameSession game) {
         User winner = game.getWinner();
         User loser = game.getLoser();
 
