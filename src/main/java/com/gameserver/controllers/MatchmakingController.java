@@ -4,7 +4,7 @@ import com.gameserver.entities.responses.Response;
 import com.gameserver.entities.responses.Status;
 import com.gameserver.security.MyUserDetails;
 import com.gameserver.services.GameService;
-import com.gameserver.services.QueueService;
+import com.gameserver.services.MatchmakingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,48 +14,46 @@ import java.util.concurrent.CompletableFuture;
 import com.gameserver.entities.User;
 
 @RestController
-public class QueueController {
+public class MatchmakingController {
 
     private final GameService gameService;
-    private final QueueService queueService;
+    private final MatchmakingService matchmakingService;
 
     @Autowired
-    public QueueController(GameService gameService, QueueService queueService) {
+    public MatchmakingController(GameService gameService, MatchmakingService matchmakingService) {
         this.gameService = gameService;
-        this.queueService = queueService;
+        this.matchmakingService = matchmakingService;
     }
 
 
     @PostMapping("/find")
     public Response find() {
-        User user = getUser();
-        if(queueService.isInQueue(user)) {
-            return new Response(false, "already in queue");
-        }
-        else if(gameService.isInGame(user)) {
-            return new Response(false, "already in game");
-        }
-        else {
-            queueService.add(user);
-            return Response.OK;
-        }
+        return matchmakingService.addInQueue(getUser());
     }
 
     @PostMapping("/leaveQueue")
     public Response leave() {
-        return queueService.leaveQueue(getUser()) ? Response.OK : new Response(false, "not in queue");
+        return matchmakingService.leaveQueue(getUser()) ? Response.OK : new Response(false, "not in queue");
+    }
+
+    @PostMapping("/accept")
+    public Response accept() {
+        return matchmakingService.acceptGame(getUser()) ? Response.OK : new Response(false, "not in acceptance");
+    }
+
+    @PostMapping("/decline")
+    public Response decline() {
+        return matchmakingService.declineGame(getUser()) ? Response.OK : new Response(false, "not in acceptance");
     }
 
     @PostMapping("/queue")
     public String print() {
-        return queueService.getQueueToString();
+        return matchmakingService.getQueueToString();
     }
 
     @PostMapping("/status")
     public Status status() {
-        User user = getUser();
-        queueService.updateTime(user);
-        return new Status(queueService.isInQueue(user), gameService.isInGame(user));
+        return matchmakingService.getStatus(getUser());
     }
 
     @PostMapping("/notifyWhenFound")
@@ -63,7 +61,7 @@ public class QueueController {
         final User user = getUser();
         DeferredResult<Response> deferredResult = new DeferredResult<>((long)1000 * 60 * 60, new Response(false, "timeout"));
         CompletableFuture.runAsync(()->{
-            while(queueService.isInQueue(user)) {
+            while(matchmakingService.isInQueue(user)) {
                 try { Thread.sleep(100); } catch(Exception e) { throw new RuntimeException(e); }
             }
             deferredResult.setResult(new Response(gameService.isInGame(user)));

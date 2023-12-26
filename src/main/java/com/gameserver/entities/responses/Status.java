@@ -1,3 +1,3 @@
 package com.gameserver.entities.responses;
 
-public record Status(boolean InQueue, boolean InGame) {}
+public record Status(boolean inQueue, boolean inAcceptance, boolean inGame) {}

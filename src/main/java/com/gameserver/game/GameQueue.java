@@ -26,6 +26,7 @@ public class GameQueue {
         return polled.user;
     }
 
+    // calls poll() 2 times to prevent other threads from changing queue between polls
     public synchronized User[] pollTwo() {
         if(this.size() >= 2) {
             return new User[]{poll(), poll()};
