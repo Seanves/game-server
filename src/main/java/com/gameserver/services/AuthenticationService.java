@@ -15,11 +15,14 @@ import java.util.Optional;
 @Service
 public class AuthenticationService implements UserDetailsService {
 
-    @Autowired
-    private JWTManager jwtManager;
+    private final JWTManager jwtManager;
+    private final UserService userService;
 
     @Autowired
-    private UserService userService;
+    public AuthenticationService(JWTManager jwtManager, UserService userService) {
+        this.jwtManager = jwtManager;
+        this.userService = userService;
+    }
 
 
     @Override

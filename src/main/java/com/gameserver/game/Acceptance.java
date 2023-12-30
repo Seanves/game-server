@@ -1,7 +1,10 @@
 package com.gameserver.game;
 
 import com.gameserver.entities.User;
+import com.gameserver.entities.responses.Response;
 import lombok.Getter;
+
+import java.util.concurrent.*;
 
 
 @Getter
@@ -15,21 +18,15 @@ public class Acceptance {
                     user1declined,
                     user2declined;
 
-    private final Thread timeoutDeleteThis;
-    private static final long TIMEOUT = 1000 * 30;
+    private ScheduledFuture<?> scheduledFuture;
+    private static final long TIMEOUT = 30; // seconds
 
     public Acceptance(User user1, User user2, DeleteAcceptanceCallback callback) {
         this.user1 = user1;
         this.user2 = user2;
 
-        this.timeoutDeleteThis = new Thread( () -> {
-            try {
-                Thread.sleep(TIMEOUT);
-                callback.deleteAcceptance(this);
-            }
-            catch(InterruptedException e) { Thread.currentThread().interrupt(); }
-        } );
-        this.timeoutDeleteThis.start();
+        ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
+        scheduledFuture = executorService.schedule( () -> callback.deleteAcceptance(this), TIMEOUT, TimeUnit.SECONDS);
     }
 
 

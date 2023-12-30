@@ -29,7 +29,7 @@ public class UserController {
 
     @PostMapping("/stats")
     public Stats stats() {
-        return userService.stats(getUser());
+        return userService.getStats(getUser());
     }
 
     @PostMapping("/top10")

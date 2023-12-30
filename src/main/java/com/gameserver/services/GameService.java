@@ -2,7 +2,6 @@ package com.gameserver.services;
 
 import com.gameserver.entities.responses.Opponent;
 import com.gameserver.entities.responses.GameResult;
-import com.gameserver.game.GameQueue;
 import com.gameserver.game.GameSession;
 import com.gameserver.entities.responses.GameResponse;
 import com.gameserver.repositories.UserRepository;
@@ -52,45 +51,31 @@ public class GameService {
 
     public boolean isMyMove(User user) {
         GameSession game = userGameMap.get(user);
-        return game.getWon()==-1 &&
-              (game.getStage()==game.CHOOSING && user.getId()==game.getChoosingPlayer() ||
-               game.getStage()==game.GUESSING && user.getId()==game.getGuessingPlayer());
+        return game.isMyMove(user.getId());
     }
 
 
     public GameResponse makeMoveChoose(User user, int amount) {
         GameSession game = userGameMap.get(user);
-        return game!=null? game.makeMoveChoose(user.getId(),amount) : GameResponse.NO_GAME;
+        return game!=null? game.makeMoveChoose(user.getId(), amount) : GameResponse.NOT_IN_GAME;
     }
 
     public GameResponse makeMoveGuess(User user, boolean even) {
         GameSession game = userGameMap.get(user);
-        return game!=null? game.makeMoveGuess(user.getId(), even) : GameResponse.NO_GAME;
+        return game!=null? game.makeMoveGuess(user.getId(), even) : GameResponse.NOT_IN_GAME;
     }
 
     public GameResponse getStatus(User user) {
         GameSession game = userGameMap.get(user);
-        return game!=null? new GameResponse(user.getId(), game) : GameResponse.NO_GAME;
+        return game!=null? new GameResponse(user.getId(), game) : GameResponse.NOT_IN_GAME;
     }
 
     public Opponent getOpponent(User userTo) {
         GameSession game = userGameMap.get(userTo);
-        if(game==null) { return null; }
-        return game.getUser1().equals(userTo) ? new Opponent(game.getUser2()) :
-                                                new Opponent(game.getUser1());
+        User opponentUser = game.getOpponent(userTo);
+        return new Opponent(opponentUser);
     }
 
-//    public GameResult getRatingChanges(User user) {
-//        GameSession game = playerGameMap.get(user);
-//        if(game.isOver()) {
-//            return new GameResult(user.getRating(), game.getRatingChange());
-//        }
-//        return new GameResult(-1, -1);
-//    }
-
-    public String getPlayerGameMapToString() {
-        return userGameMap.toString();
-    }
 
     private int onSessionEnd(GameSession game) {
         User winner = game.getWinner();

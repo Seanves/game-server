@@ -26,29 +26,24 @@ public class MatchmakingController {
     }
 
 
-    @PostMapping("/find")
+    @PostMapping("/findGame")
     public Response find() {
         return matchmakingService.addInQueue(getUser());
     }
 
     @PostMapping("/leaveQueue")
     public Response leave() {
-        return matchmakingService.leaveQueue(getUser()) ? Response.OK : new Response(false, "not in queue");
+        return matchmakingService.leaveQueue(getUser()) ? Response.OK : Response.NOT_IN_QUEUE;
     }
 
     @PostMapping("/accept")
     public Response accept() {
-        return matchmakingService.acceptGame(getUser()) ? Response.OK : new Response(false, "not in acceptance");
+        return matchmakingService.acceptGame(getUser()) ? Response.OK : Response.NOT_IN_ACCEPTANCE;
     }
 
     @PostMapping("/decline")
     public Response decline() {
-        return matchmakingService.declineGame(getUser()) ? Response.OK : new Response(false, "not in acceptance");
-    }
-
-    @PostMapping("/queue")
-    public String print() {
-        return matchmakingService.getQueueToString();
+        return matchmakingService.declineGame(getUser()) ? Response.OK : Response.NOT_IN_ACCEPTANCE;
     }
 
     @PostMapping("/status")
@@ -60,7 +55,7 @@ public class MatchmakingController {
     public DeferredResult<Response> notifyWhenFound() {
         final User user = getUser();
         DeferredResult<Response> deferredResult = new DeferredResult<>((long)1000 * 60 * 60, new Response(false, "timeout"));
-        CompletableFuture.runAsync(()->{
+        CompletableFuture.runAsync( () -> {
             while(matchmakingService.isInQueue(user)) {
                 try { Thread.sleep(100); } catch(Exception e) { throw new RuntimeException(e); }
             }
@@ -70,22 +65,7 @@ public class MatchmakingController {
     }
 
 
-//    private int idCounter = 0;
-//
-//    private synchronized int nextId() {
-//        return ++idCounter;
-//    }
-
-
     private User getUser() {
         return ((MyUserDetails)(SecurityContextHolder.getContext().getAuthentication().getPrincipal())).getUser();
     }
-
-//    private int getId() {
-//        return jwtManager.validateAndGetId(
-//                ((ServletRequestAttributes) RequestContextHolder
-//                        .getRequestAttributes())
-//                        .getRequest().getHeader("Authorization")
-//                        .substring(7));
-//    }
 }

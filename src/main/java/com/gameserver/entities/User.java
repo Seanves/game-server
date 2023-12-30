@@ -1,5 +1,6 @@
 package com.gameserver.entities;
 
+import com.gameserver.entities.auth.UserDto;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,6 +18,10 @@ public class User {
         this.password = password;
         this.nickname = nickname;
         this.rating = 100;
+    }
+
+    public User(UserDto dto) {
+        this(dto.getLogin(), dto.getPassword(), dto.getNickname());
     }
 
     @Id @Column(name = "id")

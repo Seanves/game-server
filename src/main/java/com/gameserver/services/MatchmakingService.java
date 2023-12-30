@@ -8,6 +8,7 @@ import com.gameserver.game.GameQueue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,22 +16,20 @@ import java.util.Map;
 public class MatchmakingService {
 
     private final GameQueue queue;
-    private final Map<User,Acceptance> acceptanceMap;
+    private final Map<User,Acceptance> userAcceptanceMap;
     private final GameService gameService;
 
     @Autowired
     public MatchmakingService(GameQueue queue, GameService gameService) {
         this.queue = queue;
-        this.acceptanceMap = new HashMap<>();
+        this.userAcceptanceMap = Collections.synchronizedMap(new HashMap<>());
         this.gameService = gameService;
 
         Thread matchmakingThread = new Thread( () -> {
             while(true) {
                 if(queue.size() >= 2) {
                     User[] users = queue.pollTwo();
-//                    gameService.createGameSession(users[0], users[1]);
                     createAcceptance(users[0], users[1]);
-
                 }
                 try { Thread.sleep(200); } catch (InterruptedException e) { throw new RuntimeException(e); }
             }
@@ -40,12 +39,9 @@ public class MatchmakingService {
 
 
     public Response addInQueue(User user){
-        if(isInQueue(user)) {
-            return new Response(false, "already in queue");
-        }
-        if(gameService.isInGame(user)) {
-            return new Response(false, "already in game");
-        }
+        if(isInQueue(user)) { return Response.ALREADY_IN_QUEUE; }
+        if(isInAcceptance(user)) { return Response.ALREADY_IN_ACCEPTANCE; }
+        if(gameService.isInGame(user)) { return Response.ALREADY_IN_GAME; }
         queue.add(user);
         return Response.OK;
     }
@@ -59,19 +55,19 @@ public class MatchmakingService {
 
     private void createAcceptance(User user1, User user2) {
         Acceptance acceptance = new Acceptance(user1, user2, this::deleteAcceptance);
-        acceptanceMap.put(user1, acceptance);
-        acceptanceMap.put(user2, acceptance);
+        userAcceptanceMap.put(user1, acceptance);
+        userAcceptanceMap.put(user2, acceptance);
     }
 
     private void deleteAcceptance(Acceptance acceptance) {
-        acceptanceMap.remove(acceptance.getUser1());
-        acceptanceMap.remove(acceptance.getUser2());
+        userAcceptanceMap.remove(acceptance.getUser1());
+        userAcceptanceMap.remove(acceptance.getUser2());
     }
 
-    public boolean isInAcceptance(User user) { return acceptanceMap.containsKey(user); }
+    public boolean isInAcceptance(User user) { return userAcceptanceMap.containsKey(user); }
 
     public boolean acceptGame(User user) {
-        Acceptance acceptance = acceptanceMap.get(user);
+        Acceptance acceptance = userAcceptanceMap.get(user);
         if(acceptance==null) { return false; }
         acceptance.accept(user);
 
@@ -83,7 +79,7 @@ public class MatchmakingService {
     }
 
     public boolean declineGame(User user) {
-        Acceptance acceptance = acceptanceMap.get(user);
+        Acceptance acceptance = userAcceptanceMap.get(user);
         if(acceptance==null) { return false; }
 
         acceptance.decline(user); // ?
@@ -94,7 +90,6 @@ public class MatchmakingService {
 
     public void updateTime(User user) { queue.updateTime(user); }
 
-    public String getQueueToString() { return queue.toString(); }
 
     public Status getStatus(User user) {
         updateTime(user);

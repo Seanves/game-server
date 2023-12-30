@@ -17,6 +17,8 @@ public class UserService {
     private Map<Integer,Integer> cachedIdRankMap;
     private List<Object[/* int rank, String nickname, int rating */]> cachedTop10Ranks;
 
+    private static final long CACHE_UPDATE_FREQUENCY = 1000 * 60;
+
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
@@ -25,7 +27,7 @@ public class UserService {
             while(true) {
                 updateIdRankMap();
                 updateTop10Ranks();
-                try { Thread.sleep(1000 * 60 * 2); } catch (InterruptedException e) { throw new RuntimeException(e); }
+                try { Thread.sleep(CACHE_UPDATE_FREQUENCY); } catch (InterruptedException e) { throw new RuntimeException(e); }
             }
         });
         ranksUpdatingThread.start();
@@ -55,7 +57,7 @@ public class UserService {
         return cachedTop10Ranks;
     }
 
-    public Stats stats(User user) {
+    public Stats getStats(User user) {
         return new Stats(user, getRank(user));
     }
 
