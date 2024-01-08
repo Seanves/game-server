@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
-import java.util.concurrent.CompletableFuture;
 
 @RestController
 public class GameController {
@@ -47,17 +46,15 @@ public class GameController {
     @PostMapping("/leaveGame")
     public GameResult leave() { return gameService.leaveGame(getUser()); }
 
-    @PostMapping("/notifyWhenMove")
-    public DeferredResult<Response> notifyWhenMove() {
-        final User user = getUser();
-        DeferredResult<Response> deferredResult = new DeferredResult<>((long)1000 * 60 * 2, new Response(false, "timeout"));
-        CompletableFuture.runAsync( () -> {
-            while(!gameService.isMyMove(user)) {
-                try { Thread.sleep(100); } catch(Exception e) { throw new RuntimeException(e); }
-            }
-            deferredResult.setResult(new Response(gameService.isMyMove(user)));
-        });
-        return deferredResult;
+
+    @PostMapping("/notifyWhenMyMove")
+    public DeferredResult<Response> notifyWhenMyMove() {
+        return gameService.waitForMyMove(getUser());
+    }
+
+    @PostMapping("/notifyWhenMoveChanged")
+    public DeferredResult<Response> notifyWhenMoveChanged() {
+        return gameService.waitForMoveChange(getUser());
     }
 
 

@@ -4,9 +4,10 @@ import com.gameserver.entities.User;
 import lombok.Getter;
 
 @Getter
-public class Stats {
+public class UserInfo {
 
-    public Stats(User user, int rank) {
+    public UserInfo(User user, int rank) {
+        this.nickname = user.getNickname();
         this.rating = user.getRating();
         this.winrate = String.format("%.2f", user.getWinrate()) + "%";
         this.rank = "№" + rank;
@@ -14,6 +15,7 @@ public class Stats {
         this.wins = user.getWins();
     }
 
+    private String nickname;
     private int rating;
     private String winrate;
     private String rank;

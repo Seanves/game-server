@@ -35,6 +35,7 @@ public class AuthenticationController {
                                                  .map((error) -> error.getDefaultMessage())
                                                  .toList(), null);
         }
+        userDto.setPassword( passwordEncoder.encode(userDto.getPassword()) );
         User user = new User(userDto);
         return authenticationService.register(user);
     }

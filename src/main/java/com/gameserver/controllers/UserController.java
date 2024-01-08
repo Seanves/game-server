@@ -1,7 +1,8 @@
 package com.gameserver.controllers;
 
 import com.gameserver.entities.User;
-import com.gameserver.entities.responses.Stats;
+import com.gameserver.entities.responses.Response;
+import com.gameserver.entities.responses.UserInfo;
 import com.gameserver.security.MyUserDetails;
 import com.gameserver.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,17 +24,17 @@ public class UserController {
 
 
     @PostMapping("/changeNickname")
-    public void changeNick(@RequestBody String nickname) {
-        userService.changeNickname(getUser(), nickname);
+    public Response changeNickname(@RequestBody String nickname) {
+        return userService.changeNickname(getUser(), nickname);
     }
 
-    @PostMapping("/stats")
-    public Stats stats() {
-        return userService.getStats(getUser());
+    @PostMapping("/userInfo")
+    public UserInfo userInfo() {
+        return userService.getUserInfo(getUser());
     }
 
     @PostMapping("/top10")
-    public List<Object[]> top10Ranks() {
+    public List<UserInfo> top10Ranks() {
         return userService.getTop10Ranks();
     }
 

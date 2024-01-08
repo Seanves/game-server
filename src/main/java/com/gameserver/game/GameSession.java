@@ -16,11 +16,15 @@ public class GameSession {
 
     private Player choosingPlayer;
 
-    private byte moveType;
-    public final byte CHOOSING = 1,
-                      GUESSING = 2;
+    private MoveType moveType;
+
+    public enum MoveType {
+        CHOOSING,
+        GUESSING;
+    }
 
     private final OnSessionEndCallback callback;
+    private final long startTime;
     private long endTime;
     private int ratingChange;
 
@@ -29,28 +33,29 @@ public class GameSession {
         this.player1 = new Player(user1);
         this.player2 = new Player(user2);
         this.choosingPlayer = player1;
-        this.moveType = CHOOSING;
+        this.moveType = MoveType.CHOOSING;
         this.wonId = -1;
+        this.startTime = System.currentTimeMillis();
         this.callback = callback;
     }
 
 
     public GameResponse makeMoveChoose(int id, int amount) {
         if(isOver()) { return new GameResponse(false, "Game ended, " + (id==wonId ? "you won" : "you lose"), id, this); }
-        if(id != choosingPlayer.getId() || moveType != CHOOSING) { return new GameResponse(false, "Not your choosing move", id, this); }
+        if(id != choosingPlayer.getId() || moveType != MoveType.CHOOSING) { return new GameResponse(false, "Not your choosing move", id, this); }
         if(amount <= 0) { return new GameResponse(false, "Chosen less or equal to zero", id, this); }
         if(amount > choosingPlayer.points) { return new GameResponse(false, "Chosen more than have", id, this); }
 
         chosenNumber = amount;
-        moveType = GUESSING;
+        moveType = MoveType.GUESSING;
 
-        checkIfWin();
+        checkIfGameOver();
         return new GameResponse(id, this);
     }
 
     public GameResponse makeMoveGuess(int id, boolean even) {
         if(isOver()) { return new GameResponse(false, "Game ended, " + (id== wonId ? "you won" : "you lose"), id, this); }
-        if(id != getGuessingPlayer().getId() || moveType != GUESSING) { return new GameResponse(false, "Not your guessing move", id, this); }
+        if(id != getGuessingPlayer().getId() || moveType != MoveType.GUESSING) { return new GameResponse(false, "Not your guessing move", id, this); }
 
         boolean guessed =  even == (chosenNumber%2 == 0);
         if(guessed) {
@@ -63,9 +68,9 @@ public class GameSession {
         }
 
         choosingPlayer = getGuessingPlayer();
-        moveType = CHOOSING;
+        moveType = MoveType.CHOOSING;
 
-        checkIfWin();
+        checkIfGameOver();
         return new GameResponse(id, this);
     }
 
@@ -89,7 +94,7 @@ public class GameSession {
     }
 
 
-    private void checkIfWin() {
+    private void checkIfGameOver() {
         if(player1.points <= 0) {
             wonId = player2.getId();
         }
@@ -134,8 +139,8 @@ public class GameSession {
     public boolean isMyMove(int id) {
         if(isOver()) { return false; }
 
-        return moveType == CHOOSING && id == choosingPlayer.getId()
-            || moveType == GUESSING && id == getGuessingPlayer().getId();
+        return moveType == MoveType.CHOOSING && id == choosingPlayer.getId()
+            || moveType == MoveType.GUESSING && id == getGuessingPlayer().getId();
 
     }
 
@@ -160,7 +165,7 @@ public class GameSession {
                 "player2.points=" + player2.points + ",\n  " +
                 "choosingPlayer.id=" + choosingPlayer.getId() + ",\n  " +
                 "chosenNumber=" + chosenNumber + ",\n  " +
-                "moveType=" + (moveType == CHOOSING ? "choosing" : "guessing") + "\n" +
+                "moveType=" + moveType + "\n" +
                 '}';
     }
 

@@ -26,33 +26,33 @@ public class JWTFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        if(!request.getRequestURI().equals("/login") && !request.getRequestURI().equals("/register")) {
-            String auth = request.getHeader("Authorization");
-            if(auth != null && !auth.isBlank() && auth.startsWith("Bearer ")) {
-                String jwt = auth.substring(7);
-                if(jwt.isBlank()) {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Wrong jwt token");
-                }
-                else {
-                    try {
-                        int id = jwtManager.validateAndGetId(jwt);
-                        UserDetails userDetails = authenticationService.loadUserById(id);
+        String auth = request.getHeader("Authorization");
+        if(auth != null && !auth.isBlank() && auth.startsWith("Bearer ")) {
+            String jwt = auth.substring(7);
+            if(jwt.isBlank()) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Wrong jwt token");
+                return;
+            }
+            else {
+                try {
+                    int id = jwtManager.validateAndGetId(jwt);
+                    UserDetails userDetails = authenticationService.loadUserById(id);
 
-                        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                                             userDetails, userDetails.getPassword(), userDetails.getAuthorities());
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                                         userDetails, userDetails.getPassword(), userDetails.getAuthorities());
 
-                        if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                            SecurityContextHolder.getContext().setAuthentication(authToken);
-                        }
-                    } catch(Exception e) {
-                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Wrong jwt token");
+                    if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
                     }
+                } catch(Exception e) {
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Wrong jwt token");
+                    return;
                 }
             }
         }
 
         try {
             filterChain.doFilter(request, response);
-        } catch (Exception e) {}
+        } catch (Exception e) { throw new RuntimeException(e); }
     }
 }

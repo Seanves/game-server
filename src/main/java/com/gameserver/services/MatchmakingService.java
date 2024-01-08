@@ -6,11 +6,14 @@ import com.gameserver.entities.responses.Status;
 import com.gameserver.game.Acceptance;
 import com.gameserver.game.GameQueue;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.async.DeferredResult;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class MatchmakingService {
@@ -18,6 +21,9 @@ public class MatchmakingService {
     private final GameQueue queue;
     private final Map<User,Acceptance> userAcceptanceMap;
     private final GameService gameService;
+
+    @Value("${NOTIFYING_TIMEOUT}")
+    private long NOTIFYING_TIMEOUT;
 
     @Autowired
     public MatchmakingService(GameQueue queue, GameService gameService) {
@@ -87,13 +93,34 @@ public class MatchmakingService {
         return true;
     }
 
-
     public void updateTime(User user) { queue.updateTime(user); }
-
 
     public Status getStatus(User user) {
         updateTime(user);
         return new Status(isInQueue(user), isInAcceptance(user), gameService.isInGame(user));
+    }
+
+
+    public DeferredResult<Response> waitUntilGameFound(User user) {
+        DeferredResult<Response> deferredResult = new DeferredResult<>(NOTIFYING_TIMEOUT, new Response(false, "timeout"));
+        CompletableFuture.runAsync( () -> {
+            while(isInQueue(user)) {
+                try { Thread.sleep(500); } catch(Exception e) { throw new RuntimeException(e); }
+            }
+            deferredResult.setResult(new Response(gameService.isInGame(user)));
+        });
+        return deferredResult;
+    }
+
+    public DeferredResult<Response> waitWhileInAcceptance(User user) {
+        DeferredResult<Response> deferredResult = new DeferredResult<>(NOTIFYING_TIMEOUT, new Response(false, "timeout"));
+        CompletableFuture.runAsync( () -> {
+            while(isInAcceptance(user)) {
+                try { Thread.sleep(500); } catch(Exception e) { throw new RuntimeException(e); }
+            }
+            deferredResult.setResult(new Response(gameService.isInGame(user)));
+        });
+        return deferredResult;
     }
 
 }

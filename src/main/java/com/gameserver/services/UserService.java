@@ -1,13 +1,13 @@
 package com.gameserver.services;
 
 import com.gameserver.entities.User;
-import com.gameserver.entities.responses.Stats;
+import com.gameserver.entities.responses.Response;
+import com.gameserver.entities.responses.UserInfo;
 import com.gameserver.repositories.UserRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
+
+import java.util.*;
 
 @Service
 public class UserService {
@@ -15,22 +15,19 @@ public class UserService {
     private final UserRepository userRepository;
 
     private Map<Integer,Integer> cachedIdRankMap;
-    private List<Object[/* int rank, String nickname, int rating */]> cachedTop10Ranks;
+    private List<UserInfo> cachedTop10Ranks;
 
-    private static final long CACHE_UPDATE_FREQUENCY = 1000 * 60;
+    private final Sort sort;
+    private long lastCacheUpdate;
+    private final long CACHE_UPDATE_FREQUENCY = 1000 * 60;
 
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
-    }
-    {
-        Thread ranksUpdatingThread = new Thread( () -> {
-            while(true) {
-                updateIdRankMap();
-                updateTop10Ranks();
-                try { Thread.sleep(CACHE_UPDATE_FREQUENCY); } catch (InterruptedException e) { throw new RuntimeException(e); }
-            }
-        });
-        ranksUpdatingThread.start();
+        this.sort = Sort.by(
+                Sort.Order.desc("rating"),
+                Sort.Order.desc("maxRating"),
+                Sort.Order.asc("nickname")
+        );
     }
 
 
@@ -44,22 +41,31 @@ public class UserService {
 
     public Optional<User> getUser(int id) { return userRepository.findById(id); }
 
-    public void changeNickname(User user, String nickname) {
+    public UserInfo getUserInfo(User user) { return new UserInfo(user, getRank(user)); }
+
+    public Response changeNickname(User user, String nickname) {
+        if(nickname.length() < 5 || nickname.length() > 20) {
+            return new Response(false, "Nickname must be from 5 to 20 characters long");
+        }
         user.setNickname(nickname);
-        save(user);
+        userRepository.save(user);
+        return Response.OK;
     }
 
-    public int getRank(User user) {
-        return cachedIdRankMap.get(user.getId());
+    private int getRank(User user) {
+        if(System.currentTimeMillis() > lastCacheUpdate + CACHE_UPDATE_FREQUENCY) {
+            updateRanksCache();
+        }
+        return cachedIdRankMap.getOrDefault(user.getId(), 0);
     }
 
-    public List<Object[]> getTop10Ranks() {
+    public List<UserInfo> getTop10Ranks() {
+        if(System.currentTimeMillis() > lastCacheUpdate + CACHE_UPDATE_FREQUENCY) {
+            updateRanksCache();
+        }
         return cachedTop10Ranks;
     }
 
-    public Stats getStats(User user) {
-        return new Stats(user, getRank(user));
-    }
 
 
     public void save(User user) {
@@ -67,11 +73,23 @@ public class UserService {
     }
 
 
-    private void updateIdRankMap() {
-        cachedIdRankMap = userRepository.ranks().stream()
-                   .collect(Collectors.toMap(arr->arr[0], arr->arr[1]));
-    }
+    private void updateRanksCache() {
+        List<User> users = userRepository.findAll(sort);
 
-    private void updateTop10Ranks() { cachedTop10Ranks = userRepository.top10ranks(); }
+        List<UserInfo> top10Ranks = new ArrayList<>();
+        for(int i=0; i<10 && i<users.size(); i++) {
+            top10Ranks.add(new UserInfo(users.get(i), i+1));
+        }
+
+        Map<Integer,Integer> idRankMap = new HashMap<>();
+        for(int i=0; i<users.size(); i++) {
+            User user = users.get(i);
+            idRankMap.put(user.getId(), i+1);
+        }
+
+        cachedTop10Ranks = top10Ranks;
+        cachedIdRankMap = idRankMap;
+        lastCacheUpdate = System.currentTimeMillis();
+    }
 
 }

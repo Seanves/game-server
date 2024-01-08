@@ -18,6 +18,7 @@ public class User {
         this.password = password;
         this.nickname = nickname;
         this.rating = 100;
+        this.maxRating = this.rating;
     }
 
     public User(UserDto dto) {
@@ -40,6 +41,9 @@ public class User {
     @Column(name = "rating")
     private int rating;
 
+    @Column(name = "max_rating")
+    private int maxRating;
+
     @Column(name = "games_played")
     private int gamesPlayed;
 
@@ -47,7 +51,10 @@ public class User {
     private int wins;
 
 
-    public void addRating(int n) { rating += n; }
+    public void addRating(int n) {
+        rating += n;
+        maxRating = Math.max(rating, maxRating);
+    }
 
     public void subtractRating(int n) { rating = Math.max(rating-n, 1); }
 

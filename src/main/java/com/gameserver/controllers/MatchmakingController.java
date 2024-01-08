@@ -3,25 +3,21 @@ package com.gameserver.controllers;
 import com.gameserver.entities.responses.Response;
 import com.gameserver.entities.responses.Status;
 import com.gameserver.security.MyUserDetails;
-import com.gameserver.services.GameService;
 import com.gameserver.services.MatchmakingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
-import java.util.concurrent.CompletableFuture;
 import com.gameserver.entities.User;
 
 @RestController
 public class MatchmakingController {
 
-    private final GameService gameService;
     private final MatchmakingService matchmakingService;
 
     @Autowired
-    public MatchmakingController(GameService gameService, MatchmakingService matchmakingService) {
-        this.gameService = gameService;
+    public MatchmakingController(MatchmakingService matchmakingService) {
         this.matchmakingService = matchmakingService;
     }
 
@@ -51,17 +47,15 @@ public class MatchmakingController {
         return matchmakingService.getStatus(getUser());
     }
 
+
     @PostMapping("/notifyWhenFound")
     public DeferredResult<Response> notifyWhenFound() {
-        final User user = getUser();
-        DeferredResult<Response> deferredResult = new DeferredResult<>((long)1000 * 60 * 60, new Response(false, "timeout"));
-        CompletableFuture.runAsync( () -> {
-            while(matchmakingService.isInQueue(user)) {
-                try { Thread.sleep(100); } catch(Exception e) { throw new RuntimeException(e); }
-            }
-            deferredResult.setResult(new Response(gameService.isInGame(user)));
-        });
-        return deferredResult;
+        return matchmakingService.waitUntilGameFound(getUser());
+    }
+
+    @PostMapping("/notifyWhenNotInAcceptance")
+    public DeferredResult<Response> notifyWhenNotInAcceptance() {
+        return matchmakingService.waitWhileInAcceptance(getUser());
     }
 
 

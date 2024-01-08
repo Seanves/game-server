@@ -14,11 +14,11 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User,Integer> {
     Optional<User> findById(int id);
     Optional<User> findByLogin(String login);
-//    Optional<User> findByLoginAndPassword(String login, String password);
     Boolean existsByLogin(String login);
     Boolean existsById(int id);
 
 
+  /*
     @Query(value = "SELECT id, position " +
                    "FROM ( " +
                    "    SELECT id, RANK() OVER (ORDER BY rating DESC) AS position " +
@@ -33,4 +33,5 @@ public interface UserRepository extends JpaRepository<User,Integer> {
                    ") AS ranked_users " +
                    "LIMIT 10", nativeQuery = true)
     List<Object[]> top10ranks();
+                                                                                                       */
 }
