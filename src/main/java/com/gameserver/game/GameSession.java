@@ -8,20 +8,15 @@ import lombok.Getter;
 @Getter
 public class GameSession {
 
-    private int chosenNumber,
-                wonId;
-
     private final Player player1,
                          player2;
 
     private Player choosingPlayer;
 
-    private MoveType moveType;
+    private int chosenNumber,
+                wonId;
 
-    public enum MoveType {
-        CHOOSING,
-        GUESSING;
-    }
+    private MoveType moveType;
 
     private final OnSessionEndCallback callback;
     private final long startTime;
@@ -29,22 +24,41 @@ public class GameSession {
     private int ratingChange;
 
 
+    public enum MoveType {
+        CHOOSING,
+        GUESSING;
+    }
+
+    private static class Player {
+        User relatedUser;
+        int points;
+
+        Player(User relatedUser) {
+            this.relatedUser = relatedUser;
+            this.points = 10;
+        }
+
+        int getId() { return relatedUser.getId(); }
+    }
+
+
     public GameSession(User user1, User user2, OnSessionEndCallback callback) {
-        this.player1 = new Player(user1);
-        this.player2 = new Player(user2);
-        this.choosingPlayer = player1;
-        this.moveType = MoveType.CHOOSING;
-        this.wonId = -1;
-        this.startTime = System.currentTimeMillis();
+        player1 = new Player(user1);
+        player2 = new Player(user2);
+        choosingPlayer = player1;
+        moveType = MoveType.CHOOSING;
+        wonId = -1;
+        startTime = System.currentTimeMillis();
         this.callback = callback;
     }
 
 
     public GameResponse makeMoveChoose(int id, int amount) {
-        if(isOver()) { return new GameResponse(false, "Game ended, " + (id==wonId ? "you won" : "you lose"), id, this); }
-        if(id != choosingPlayer.getId() || moveType != MoveType.CHOOSING) { return new GameResponse(false, "Not your choosing move", id, this); }
-        if(amount <= 0) { return new GameResponse(false, "Chosen less or equal to zero", id, this); }
-        if(amount > choosingPlayer.points) { return new GameResponse(false, "Chosen more than have", id, this); }
+        if(isOver())                         { return new GameResponse(false, "Game ended, " + (id==wonId ? "you won" : "you lose"), id, this); }
+        if(id != choosingPlayer.getId()
+           || moveType != MoveType.CHOOSING) { return new GameResponse(false, "Not your choosing move", id, this); }
+        if(amount <= 0)                      { return new GameResponse(false, "Chosen less or equal to zero", id, this); }
+        if(amount > choosingPlayer.points)   { return new GameResponse(false, "Chosen more than have", id, this); }
 
         chosenNumber = amount;
         moveType = MoveType.GUESSING;
@@ -54,8 +68,9 @@ public class GameSession {
     }
 
     public GameResponse makeMoveGuess(int id, boolean even) {
-        if(isOver()) { return new GameResponse(false, "Game ended, " + (id== wonId ? "you won" : "you lose"), id, this); }
-        if(id != getGuessingPlayer().getId() || moveType != MoveType.GUESSING) { return new GameResponse(false, "Not your guessing move", id, this); }
+        if(isOver())                         { return new GameResponse(false, "Game ended, " + (id== wonId ? "you won" : "you lose"), id, this); }
+        if(id != getGuessingPlayer().getId()
+           || moveType != MoveType.GUESSING) { return new GameResponse(false, "Not your guessing move", id, this); }
 
         boolean guessed =  even == (chosenNumber%2 == 0);
         if(guessed) {
@@ -108,7 +123,7 @@ public class GameSession {
     public GameResult leave(int id) {
         if(!isOver()) {
             wonId =  id == player1.getId() ? player2.getId() :
-                                             player1.getId(); // other player id
+                                             player1.getId();
             endSession();
         }
         return new GameResult(id == wonId, id == player1.getId() ? player1.relatedUser.getRating() :
@@ -169,16 +184,4 @@ public class GameSession {
                 '}';
     }
 
-
-    private static class Player {
-        User relatedUser;
-        int points;
-
-        Player(User relatedUser) {
-            this.relatedUser = relatedUser;
-            this.points = 10;
-        }
-
-        int getId() { return relatedUser.getId(); }
-    }
 }

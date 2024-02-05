@@ -8,8 +8,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.Objects;
 
-@Entity @Data
+@Entity
 @Table(name="Users")
+@Data
 @NoArgsConstructor
 public class User {
 
@@ -25,7 +26,8 @@ public class User {
         this(dto.getLogin(), dto.getPassword(), dto.getNickname());
     }
 
-    @Id @Column(name = "id")
+    @Id
+    @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
@@ -75,10 +77,11 @@ public class User {
 
     @Override
     public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
+        if(this == o) { return true; }
+        if(o == null || getClass() != o.getClass()) { return false; }
         User other = (User) o;
-        return id == other.id && Objects.equals(login, other.login) && Objects.equals(nickname, other.nickname);
+        return id == other.id && Objects.equals(login, other.login)
+                              && Objects.equals(nickname, other.nickname);
     }
 
 }

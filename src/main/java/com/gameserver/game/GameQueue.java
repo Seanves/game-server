@@ -12,6 +12,22 @@ public class GameQueue {
     private final Map<User,Node> map = new HashMap<>();
     private final int TIMEOUT = 1000 * 30;
 
+    {
+        Thread timeoutThread = new Thread( () -> {
+            while(true) {
+                try { Thread.sleep(5000); } catch (InterruptedException e) { throw new RuntimeException(e); }
+                synchronized(this) {
+                    for(Node node: map.values()) {
+                        if(System.currentTimeMillis() > node.time + TIMEOUT) {
+                            remove(node);
+                        }
+                    }
+                }
+            }
+        });
+        timeoutThread.start();
+    }
+
 
     public synchronized void add(User user) {
         Node node = new Node(user);
@@ -62,33 +78,17 @@ public class GameQueue {
         return map.containsKey(user);
     }
 
-    public int size() {
+    public synchronized int size() {
         return queue.size();
     }
 
-    public boolean isEmpty() {
+    public synchronized boolean isEmpty() {
         return queue.isEmpty();
     }
 
     @Override
     public String toString() {
-        return queue.toString() + " " + map.toString();
-    }
-
-
-    /* initialization */ {
-        new Thread( () -> {
-            while(true) {
-                synchronized(this) {
-                    try { wait(1000); } catch (InterruptedException e) { throw new RuntimeException(e); }
-                    for(Node node: map.values()) {
-                        if(System.currentTimeMillis() > node.time + TIMEOUT) {
-                            remove(node);
-                        }
-                    }
-                }
-            }
-        }).start();
+        return queue + " " + map;
     }
 
 
@@ -103,15 +103,15 @@ public class GameQueue {
 
         @Override
         public boolean equals(Object o) {
-            if(this == o) return true;
-            if(o == null || getClass() != o.getClass()) return false;
+            if(this == o) { return true; }
+            if(o == null || getClass() != o.getClass()) { return false; }
             Node other = (Node) o;
-            return this.user.equals(other.user);
+            return user.equals(other.user);
         }
 
         @Override
         public int hashCode() {
-            return this.user.hashCode();
+            return user.hashCode();
         }
 
         @Override
