@@ -1,10 +1,12 @@
 package com.gameserver.services;
 
+import com.gameserver.entities.GameResult;
 import com.gameserver.entities.responses.Opponent;
-import com.gameserver.entities.responses.GameResult;
+import com.gameserver.entities.responses.PostGameResult;
 import com.gameserver.entities.responses.Response;
 import com.gameserver.game.GameSession;
 import com.gameserver.entities.responses.GameResponse;
+import com.gameserver.repositories.GameResultRepository;
 import com.gameserver.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +23,7 @@ public class GameService {
 
     private final Map<User,GameSession> userGameMap;
     private final UserRepository userRepository;
+    private final GameResultRepository gameResultRepository;
 
     private final long ENDED_SESSION_TIMEOUT = 1000 * 60,
                        FORCED_SESSION_TIMEOUT = 1000 * 60 * 60 * 2; // 2 hours
@@ -29,9 +32,10 @@ public class GameService {
     private long NOTIFYING_TIMEOUT;
 
     @Autowired
-    public GameService(UserRepository userRepository){
+    public GameService(UserRepository userRepository, GameResultRepository gameResultRepository){
         this.userGameMap = new HashMap<>();
         this.userRepository = userRepository;
+        this.gameResultRepository = gameResultRepository;
 
         Thread gameDeletingThread = new Thread( () -> {
             while(true) {
@@ -53,9 +57,9 @@ public class GameService {
         userGameMap.put(user2, newGameSession);
     }
 
-    public GameResult leaveGame(User user) {
+    public PostGameResult leaveGame(User user) {
         GameSession game = userGameMap.remove(user);
-        if(game==null) { return new GameResult(false, -1, -1); }
+        if(game==null) { return new PostGameResult(false, -1, -1); }
 
         return game.leave(user.getId());
     }
@@ -92,13 +96,7 @@ public class GameService {
         return new Opponent(opponentUser);
     }
 
-
-    private int onSessionEnd(GameSession game) {
-        User winner = game.getWinner();
-        User loser = game.getLoser();
-
-        // count rating change
-
+    private int countRatingChange(User winner, User loser) {
         // multiplier
         double m = (float) loser.getRating() / winner.getRating();
         // make multiplier closer to 1 by 80%
@@ -108,17 +106,30 @@ public class GameService {
         // min 10, max 40
         change = Math.min(Math.max(change, 10), 40);
 
-        winner.addRating(change);
-        loser.subtractRating(change);
+        return change;
+    }
+
+
+    private int onSessionEnd(GameSession game) {
+        User winner = game.getWinner();
+        User loser = game.getLoser();
+
+        int ratingChange = countRatingChange(winner, loser);
+
+        winner.addRating(ratingChange);
+        loser.subtractRating(ratingChange);
 
         winner.incrementWins();
         winner.incrementGamesPlayed();
         loser.incrementGamesPlayed();
 
+        GameResult result = new GameResult(winner, loser, ratingChange);
+        gameResultRepository.save(result);
+
         userRepository.save(winner);
         userRepository.save(loser);
 
-        return change;
+        return ratingChange;
     }
 
 

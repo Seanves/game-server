@@ -2,7 +2,7 @@ package com.gameserver.game;
 
 import com.gameserver.entities.responses.GameResponse;
 import com.gameserver.entities.User;
-import com.gameserver.entities.responses.GameResult;
+import com.gameserver.entities.responses.PostGameResult;
 import lombok.Getter;
 
 @Getter
@@ -14,14 +14,14 @@ public class GameSession {
     private Player choosingPlayer;
 
     private int chosenNumber,
-                wonId;
+                wonId,
+                ratingChange;
 
     private MoveType moveType;
 
     private final OnSessionEndCallback callback;
     private final long startTime;
     private long endTime;
-    private int ratingChange;
 
 
     public enum MoveType {
@@ -120,13 +120,13 @@ public class GameSession {
         endSession();
     }
 
-    public GameResult leave(int id) {
+    public PostGameResult leave(int id) {
         if(!isOver()) {
             wonId =  id == player1.getId() ? player2.getId() :
                                              player1.getId();
             endSession();
         }
-        return new GameResult(id == wonId, id == player1.getId() ? player1.relatedUser.getRating() :
+        return new PostGameResult(id == wonId, id == player1.getId() ? player1.relatedUser.getRating() :
                                                                         player2.relatedUser.getRating(), ratingChange);
     }
 

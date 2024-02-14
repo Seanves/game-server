@@ -3,7 +3,7 @@ package com.gameserver.controllers;
 import com.gameserver.entities.User;
 import com.gameserver.entities.responses.GameResponse;
 import com.gameserver.entities.responses.Opponent;
-import com.gameserver.entities.responses.GameResult;
+import com.gameserver.entities.responses.PostGameResult;
 import com.gameserver.entities.responses.Response;
 import com.gameserver.security.MyUserDetails;
 import com.gameserver.services.GameService;
@@ -44,7 +44,7 @@ public class GameController {
     }
 
     @PostMapping("/leaveGame")
-    public GameResult leave() { return gameService.leaveGame(getUser()); }
+    public PostGameResult leave() { return gameService.leaveGame(getUser()); }
 
 
     @PostMapping("/notifyWhenMyMove")

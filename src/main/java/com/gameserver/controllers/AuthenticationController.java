@@ -2,7 +2,7 @@ package com.gameserver.controllers;
 
 import com.gameserver.entities.User;
 import com.gameserver.entities.auth.AuthResponse;
-import com.gameserver.entities.auth.UserDto;
+import com.gameserver.entities.auth.UserDTO;
 import com.gameserver.services.AuthenticationService;
 import com.gameserver.services.UserService;
 import jakarta.validation.Valid;
@@ -28,7 +28,7 @@ public class AuthenticationController {
 
 
     @PostMapping("/register")
-    public AuthResponse register(@RequestBody @Valid UserDto userDto, BindingResult bindingResult) {
+    public AuthResponse register(@RequestBody @Valid UserDTO userDto, BindingResult bindingResult) {
         if(bindingResult.hasErrors()) {
             return new AuthResponse(false, "Errors: " + bindingResult.getFieldErrors()
                                                  .stream()
@@ -41,7 +41,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/login")
-    public AuthResponse login(@RequestBody UserDto userDto) {
+    public AuthResponse login(@RequestBody UserDTO userDto) {
         Optional<User> optional = userService.getUser(userDto.getLogin());
         if(optional.isPresent() && passwordEncoder.matches(userDto.getPassword(), optional.get().getPassword())) {
             return authenticationService.getNewToken(optional.get().getId());

@@ -1,10 +1,11 @@
 package com.gameserver.entities;
 
-import com.gameserver.entities.auth.UserDto;
+import com.gameserver.entities.auth.UserDTO;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.Objects;
 
@@ -22,22 +23,24 @@ public class User {
         this.maxRating = this.rating;
     }
 
-    public User(UserDto dto) {
+    public User(UserDTO dto) {
         this(dto.getLogin(), dto.getPassword(), dto.getNickname());
     }
+
 
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Setter(AccessLevel.NONE)
     private int id;
 
-    @Column(name = "login")
+    @Column(name = "login", unique = true, nullable = false)
     private String login;
 
-    @Column(name = "password")
+    @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(name = "nickname")
+    @Column(name = "nickname", nullable = false)
     private String nickname;
 
     @Column(name = "rating")
