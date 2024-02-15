@@ -14,10 +14,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class GameResult {
 
-    public GameResult(User winner, User loser, int ratingChange) {
+    public GameResult(User winner, User loser, int winnerChange, int loserChange) {
         this.winner = winner;
         this.loser = loser;
-        this.ratingChange = ratingChange;
+        this.winnerChange = winnerChange;
+        this.loserChange = loserChange;
         this.time = Timestamp.valueOf(LocalDateTime.now());
     }
 
@@ -35,8 +36,11 @@ public class GameResult {
     @JoinColumn(name = "loser_id", nullable = false)
     private User loser;
 
-    @Column(name = "rating_change")
-    private int ratingChange;
+    @Column(name = "winner_change")
+    private int winnerChange;
+
+    @Column(name = "loser_change")
+    private int loserChange;
 
     @Column(name = "time")
     private Timestamp time;

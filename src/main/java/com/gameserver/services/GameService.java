@@ -114,6 +114,8 @@ public class GameService {
         User winner = game.getWinner();
         User loser = game.getLoser();
 
+        int loserRatingBefore = loser.getRating();
+
         int ratingChange = countRatingChange(winner, loser);
 
         winner.addRating(ratingChange);
@@ -123,7 +125,8 @@ public class GameService {
         winner.incrementGamesPlayed();
         loser.incrementGamesPlayed();
 
-        GameResult result = new GameResult(winner, loser, ratingChange);
+        GameResult result = new GameResult(winner, loser, ratingChange,
+                                        loser.getRating() - loserRatingBefore);
         gameResultRepository.save(result);
 
         userRepository.save(winner);

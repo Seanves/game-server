@@ -1,7 +1,7 @@
 package com.gameserver.services;
 
 import com.gameserver.entities.GameResult;
-import com.gameserver.entities.GameResultDTO;
+import com.gameserver.entities.responses.GameResultDTO;
 import com.gameserver.entities.User;
 import com.gameserver.entities.responses.Response;
 import com.gameserver.entities.responses.UserInfo;

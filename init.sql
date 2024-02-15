@@ -12,8 +12,9 @@ CREATE TABLE IF NOT EXISTS Users (
 CREATE TABLE IF NOT EXISTS Game_result (
     id serial               PRIMARY KEY,
     winner_id int,
-    loser_id int,
-    rating_change smallint  NOT NULL,
+    loser_id  int,
+    winner_change smallint  NOT NULL,
+    loser_change  smallint  NOT NULL,
     time timestamp          NOT NULL,
     FOREIGN KEY (winner_id) REFERENCES Users(id),
     FOREIGN KEY (loser_id)  REFERENCES Users(id)
