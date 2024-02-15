@@ -32,10 +32,12 @@ public class GameSession {
     private static class Player {
         User relatedUser;
         int points;
+        int ratingAtStart;
 
         Player(User relatedUser) {
             this.relatedUser = relatedUser;
             this.points = 10;
+            this.ratingAtStart = relatedUser.getRating();
         }
 
         int getId() { return relatedUser.getId(); }
@@ -126,8 +128,9 @@ public class GameSession {
                                              player1.getId();
             endSession();
         }
-        return new PostGameResult(id == wonId, id == player1.getId() ? player1.relatedUser.getRating() :
-                                                                        player2.relatedUser.getRating(), ratingChange);
+        Player player =  id == player1.getId() ? player1 : player2;
+        return new PostGameResult(id == wonId, player.relatedUser.getRating(),
+                                                           player.ratingAtStart, ratingChange);
     }
 
     private void endSession() {

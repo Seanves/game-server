@@ -59,7 +59,7 @@ public class GameService {
 
     public PostGameResult leaveGame(User user) {
         GameSession game = userGameMap.remove(user);
-        if(game==null) { return new PostGameResult(false, -1, -1); }
+        if(game==null) { return new PostGameResult(false, -1, -1, -1); }
 
         return game.leave(user.getId());
     }
@@ -98,8 +98,8 @@ public class GameService {
 
     private int countRatingChange(User winner, User loser) {
         // multiplier
-        double m = (float) loser.getRating() / winner.getRating();
-        // make multiplier closer to 1 by 80%
+        double m = (float) Math.max(loser.getRating(), 20) / Math.max(winner.getRating(), 20);
+        // multiplier closer to 1 by 80%
         m = m + (1 - m) * 0.8;
         // rating change
         int change = (int)(m * 20);

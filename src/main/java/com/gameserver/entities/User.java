@@ -6,7 +6,6 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import java.util.Objects;
 
 @Entity
@@ -19,7 +18,7 @@ public class User {
         this.login = login;
         this.password = password;
         this.nickname = nickname;
-        this.rating = 100;
+        this.rating = 0;
         this.maxRating = this.rating;
     }
 
@@ -61,7 +60,7 @@ public class User {
         maxRating = Math.max(rating, maxRating);
     }
 
-    public void subtractRating(int n) { rating = Math.max(rating-n, 1); }
+    public void subtractRating(int n) { rating = Math.max(rating-n, 0); }
 
     public void incrementGamesPlayed() { gamesPlayed++; }
 
