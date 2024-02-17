@@ -23,6 +23,9 @@ public class GameSession {
     private final long startTime;
     private long endTime;
 
+    private final int id;
+    private static int idCounter = 0;
+
 
     public enum MoveType {
         CHOOSING,
@@ -52,6 +55,7 @@ public class GameSession {
         wonId = -1;
         startTime = System.currentTimeMillis();
         this.callback = callback;
+        id = nextId();
     }
 
 
@@ -175,6 +179,10 @@ public class GameSession {
     }
 
     public boolean isOver() { return wonId != -1; }
+
+    private static synchronized int nextId() {
+        return idCounter++;
+    }
 
     @Override
     public String toString() {

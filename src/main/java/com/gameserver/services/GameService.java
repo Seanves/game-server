@@ -96,6 +96,11 @@ public class GameService {
         return new Opponent(opponentUser);
     }
 
+    public int getGameId(User user) {
+        GameSession game = userGameMap.get(user);
+        return game!=null ? game.getId() : -1;
+    }
+
     private int countRatingChange(User winner, User loser) {
         // multiplier
         double m = (float) Math.max(loser.getRating(), 20) / Math.max(winner.getRating(), 20);

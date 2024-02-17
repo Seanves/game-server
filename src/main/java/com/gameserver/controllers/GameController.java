@@ -46,6 +46,9 @@ public class GameController {
     @PostMapping("/leaveGame")
     public PostGameResult leave() { return gameService.leaveGame(getUser()); }
 
+    @PostMapping("/chatId")
+    public int chatId() { return gameService.getGameId(getUser()); }
+
 
     @PostMapping("/notifyWhenMyMove")
     public DeferredResult<Response> notifyWhenMyMove() {
