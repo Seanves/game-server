@@ -12,8 +12,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 @Service
 public class UserService {
@@ -40,22 +42,9 @@ public class UserService {
     }
 
 
-    public boolean isExists(String login) { return userRepository.existsByLogin(login); }
-
-    public boolean isExists(int id) { return userRepository.existsById(id); }
-
-    public Optional<User> getUser(String login) {
-        return userRepository.findByLogin(login);
-    }
-
-    public Optional<User> getUser(int id) { return userRepository.findById(id); }
-
     public UserInfo getUserInfo(User user) { return new UserInfo(user, getRank(user)); }
 
     public Response changeNickname(User user, String newNickname) {
-        if(newNickname.length() < 5 || newNickname.length() > 20) {
-            return new Response(false, "Nickname must be from 5 to 20 characters long");
-        }
         user.setNickname(newNickname);
         userRepository.save(user);
         return Response.OK;
@@ -79,12 +68,6 @@ public class UserService {
             updateRanksCache();
         }
         return cachedTop10Ranks;
-    }
-
-
-
-    public void save(User user) {
-        userRepository.save(user);
     }
 
 

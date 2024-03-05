@@ -30,31 +30,22 @@ public class MatchmakingService {
         this.queue = queue;
         this.userAcceptanceMap = Collections.synchronizedMap(new HashMap<>());
         this.gameService = gameService;
-
-        Thread matchmakingThread = new Thread( () -> {
-            while(true) {
-                if(queue.size() >= 2) {
-                    User[] users = queue.pollTwo();
-                    createAcceptance(users[0], users[1]);
-                }
-                try { Thread.sleep(200); } catch (InterruptedException e) { throw new RuntimeException(e); }
-            }
-        });
-        matchmakingThread.start();
     }
 
 
-    public Response addInQueue(User user){
-        if(isInQueue(user)) { return Response.ALREADY_IN_QUEUE; }
-        if(isInAcceptance(user)) { return Response.ALREADY_IN_ACCEPTANCE; }
+    public Response addInQueue(User user) {
+        if(isInQueue(user))            { return Response.ALREADY_IN_QUEUE; }
+        if(isInAcceptance(user))       { return Response.ALREADY_IN_ACCEPTANCE; }
         if(gameService.isInGame(user)) { return Response.ALREADY_IN_GAME; }
         queue.add(user);
+        if(queue.size() >= 2) {
+            User[] users = queue.pollTwo();
+            createAcceptance(users[0], users[1]);
+        }
         return Response.OK;
     }
 
-    public boolean leaveQueue(User user) {
-        return queue.remove(user);
-    }
+    public boolean leaveQueue(User user) { return queue.remove(user); }
 
     public boolean isInQueue(User user) { return queue.contains(user); }
 

@@ -1,7 +1,6 @@
 package com.gameserver.security;
 
-import com.auth0.jwt.exceptions.JWTVerificationException;
-import com.gameserver.services.AuthenticationService;
+import com.gameserver.services.MyUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
@@ -19,12 +17,12 @@ import java.io.IOException;
 public class JWTFilter extends OncePerRequestFilter {
 
     private final JWTManager jwtManager;
-    private final AuthenticationService authenticationService;
+    private final MyUserDetailsService myUserDetailsService;
 
     @Autowired
-    public JWTFilter(JWTManager jwtManager, AuthenticationService authenticationService) {
+    public JWTFilter(JWTManager jwtManager, MyUserDetailsService myUserDetailsService) {
         this.jwtManager = jwtManager;
-        this.authenticationService = authenticationService;
+        this.myUserDetailsService = myUserDetailsService;
     }
 
 
@@ -40,7 +38,7 @@ public class JWTFilter extends OncePerRequestFilter {
             else {
                 try {
                     int id = jwtManager.validateAndGetId(jwt);
-                    UserDetails userDetails = authenticationService.loadUserById(id);
+                    UserDetails userDetails = myUserDetailsService.loadUserById(id);
 
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                                          userDetails, userDetails.getPassword(), userDetails.getAuthorities());

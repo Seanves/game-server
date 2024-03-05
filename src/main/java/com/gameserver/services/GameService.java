@@ -11,10 +11,10 @@ import com.gameserver.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-
 import com.gameserver.entities.User;
 import org.springframework.web.context.request.async.DeferredResult;
 
@@ -30,24 +30,31 @@ public class GameService {
 
     @Value("${NOTIFYING_TIMEOUT}")
     private long NOTIFYING_TIMEOUT;
+    private final int TIMEOUT_FREQUENCY = 1000 * 30;
 
     @Autowired
     public GameService(UserRepository userRepository, GameResultRepository gameResultRepository){
-        this.userGameMap = new HashMap<>();
+        this.userGameMap = Collections.synchronizedMap( new HashMap<>() );
         this.userRepository = userRepository;
         this.gameResultRepository = gameResultRepository;
 
-        Thread gameDeletingThread = new Thread( () -> {
+        Thread gameTimeoutingThread = new Thread( () -> {
             while(true) {
                 userGameMap.entrySet().removeIf(
-                        entry ->
-                /* timeout after session end */  entry.getValue().isOver() && System.currentTimeMillis() > entry.getValue().getEndTime() + ENDED_SESSION_TIMEOUT
-                           /* forced timeout */  || System.currentTimeMillis() > entry.getValue().getStartTime() + FORCED_SESSION_TIMEOUT
+                        entry -> {
+                                    long startTime = entry.getValue().getStartTime(),
+                                         endTime = entry.getValue().getEndTime(),
+                                         currentTime = System.currentTimeMillis();
+
+    /* timeout after session end */ return entry.getValue().isOver()
+                                    && currentTime > endTime + ENDED_SESSION_TIMEOUT
+               /* forced timeout */ || currentTime > startTime + FORCED_SESSION_TIMEOUT;
+                        }
                 );
-                try { Thread.sleep(1000 * 30); } catch (InterruptedException e) { throw new RuntimeException(e); }
+                try { Thread.sleep(TIMEOUT_FREQUENCY); } catch (InterruptedException e) { throw new RuntimeException(e); }
             }
         });
-        gameDeletingThread.start();
+        gameTimeoutingThread.start();
     }
 
 
