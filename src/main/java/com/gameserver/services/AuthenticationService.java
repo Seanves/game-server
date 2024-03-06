@@ -5,7 +5,6 @@ import com.gameserver.entities.auth.AuthResponse;
 import com.gameserver.entities.auth.UserDTO;
 import com.gameserver.repositories.UserRepository;
 import com.gameserver.security.JWTManager;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.Optional;
@@ -17,7 +16,7 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JWTManager jwtManager;
 
-    @Autowired
+
     public AuthenticationService(UserRepository userRepository, PasswordEncoder passwordEncoder, JWTManager jwtManager) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;

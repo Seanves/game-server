@@ -5,7 +5,6 @@ import com.gameserver.entities.responses.Response;
 import com.gameserver.entities.responses.Status;
 import com.gameserver.game.Acceptance;
 import com.gameserver.game.GameQueue;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.async.DeferredResult;
@@ -19,54 +18,58 @@ import java.util.concurrent.CompletableFuture;
 public class MatchmakingService {
 
     private final GameQueue queue;
-    private final Map<User,Acceptance> userAcceptanceMap;
+    private final Map<Integer,Acceptance> userIdAcceptanceMap;
     private final GameService gameService;
+    private final UserLoader userLoader;
 
     @Value("${NOTIFYING_TIMEOUT}")
     private long NOTIFYING_TIMEOUT;
 
-    @Autowired
-    public MatchmakingService(GameQueue queue, GameService gameService) {
+
+    public MatchmakingService(GameQueue queue, GameService gameService, UserLoader userLoader) {
         this.queue = queue;
-        this.userAcceptanceMap = Collections.synchronizedMap(new HashMap<>());
+        this.userLoader = userLoader;
+        this.userIdAcceptanceMap = Collections.synchronizedMap(new HashMap<>());
         this.gameService = gameService;
     }
 
 
-    public Response addInQueue(User user) {
-        if(isInQueue(user))            { return Response.ALREADY_IN_QUEUE; }
-        if(isInAcceptance(user))       { return Response.ALREADY_IN_ACCEPTANCE; }
-        if(gameService.isInGame(user)) { return Response.ALREADY_IN_GAME; }
-        queue.add(user);
+    public Response addInQueue(int id) {
+        if(isInQueue(id))            { return Response.ALREADY_IN_QUEUE; }
+        if(isInAcceptance(id))       { return Response.ALREADY_IN_ACCEPTANCE; }
+        if(gameService.isInGame(id)) { return Response.ALREADY_IN_GAME; }
+        queue.add(id);
+
         if(queue.size() >= 2) {
-            User[] users = queue.pollTwo();
-            createAcceptance(users[0], users[1]);
+            int[] ids = queue.pollTwo();
+            User user1 = userLoader.load(ids[0]);
+            User user2 = userLoader.load(ids[1]);
+            createAcceptance(user1, user2);
         }
         return Response.OK;
     }
 
-    public boolean leaveQueue(User user) { return queue.remove(user); }
+    public boolean leaveQueue(int id) { return queue.remove(id); }
 
-    public boolean isInQueue(User user) { return queue.contains(user); }
-
+    public boolean isInQueue(int id) { return queue.contains(id); }
 
     private void createAcceptance(User user1, User user2) {
         Acceptance acceptance = new Acceptance(user1, user2, this::deleteAcceptance);
-        userAcceptanceMap.put(user1, acceptance);
-        userAcceptanceMap.put(user2, acceptance);
+        userIdAcceptanceMap.put(user1.getId(), acceptance);
+        userIdAcceptanceMap.put(user2.getId(), acceptance);
     }
 
     private void deleteAcceptance(Acceptance acceptance) {
-        userAcceptanceMap.remove(acceptance.getUser1());
-        userAcceptanceMap.remove(acceptance.getUser2());
+        userIdAcceptanceMap.remove(acceptance.getUser1().getId());
+        userIdAcceptanceMap.remove(acceptance.getUser2().getId());
     }
 
-    public boolean isInAcceptance(User user) { return userAcceptanceMap.containsKey(user); }
+    public boolean isInAcceptance(int id) { return userIdAcceptanceMap.containsKey(id); }
 
-    public boolean acceptGame(User user) {
-        Acceptance acceptance = userAcceptanceMap.get(user);
+    public boolean acceptGame(int id) {
+        Acceptance acceptance = userIdAcceptanceMap.get(id);
         if(acceptance==null) { return false; }
-        acceptance.accept(user);
+        acceptance.accept(id);
 
         if(acceptance.isEverybodyAccepted()) {
             gameService.createGameSession(acceptance.getUser1(),acceptance.getUser2());
@@ -75,41 +78,41 @@ public class MatchmakingService {
         return true;
     }
 
-    public boolean declineGame(User user) {
-        Acceptance acceptance = userAcceptanceMap.get(user);
+    public boolean declineGame(int id) {
+        Acceptance acceptance = userIdAcceptanceMap.get(id);
         if(acceptance==null) { return false; }
 
-        acceptance.decline(user); // ?
+        acceptance.decline(id); // ?
         deleteAcceptance(acceptance);
         return true;
     }
 
-    public void updateTime(User user) { queue.updateTime(user); }
+    public void updateTime(int id) { queue.updateTime(id); }
 
-    public Status getStatus(User user) {
-        updateTime(user);
-        return new Status(isInQueue(user), isInAcceptance(user), gameService.isInGame(user));
+    public Status getStatus(int id) {
+        updateTime(id);
+        return new Status(isInQueue(id), isInAcceptance(id), gameService.isInGame(id));
     }
 
 
-    public DeferredResult<Response> waitUntilGameFound(User user) {
+    public DeferredResult<Response> waitUntilGameFound(int userId) {
         DeferredResult<Response> deferredResult = new DeferredResult<>(NOTIFYING_TIMEOUT, new Response(false, "timeout"));
         CompletableFuture.runAsync( () -> {
-            while(isInQueue(user)) {
+            while(isInQueue(userId)) {
                 try { Thread.sleep(500); } catch(Exception e) { throw new RuntimeException(e); }
             }
-            deferredResult.setResult(new Response(gameService.isInGame(user)));
+            deferredResult.setResult(new Response(gameService.isInGame(userId)));
         });
         return deferredResult;
     }
 
-    public DeferredResult<Response> waitWhileInAcceptance(User user) {
+    public DeferredResult<Response> waitWhileInAcceptance(int userId) {
         DeferredResult<Response> deferredResult = new DeferredResult<>(NOTIFYING_TIMEOUT, new Response(false, "timeout"));
         CompletableFuture.runAsync( () -> {
-            while(isInAcceptance(user)) {
+            while(isInAcceptance(userId)) {
                 try { Thread.sleep(500); } catch(Exception e) { throw new RuntimeException(e); }
             }
-            deferredResult.setResult(new Response(gameService.isInGame(user)));
+            deferredResult.setResult(new Response(gameService.isInGame(userId)));
         });
         return deferredResult;
     }

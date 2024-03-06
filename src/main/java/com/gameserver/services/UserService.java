@@ -31,6 +31,7 @@ public class UserService {
     private final int PAGE_SIZE = 10;
     private final long CACHE_UPDATE_FREQUENCY = 1000 * 60;
 
+
     public UserService(UserRepository userRepository, GameResultRepository gameResultRepository) {
         this.userRepository = userRepository;
         this.gameResultRepository = gameResultRepository;
@@ -42,7 +43,7 @@ public class UserService {
     }
 
 
-    public UserInfo getUserInfo(User user) { return new UserInfo(user, getRank(user)); }
+    public UserInfo getUserInfo(User user) { return new UserInfo(user, getRank(user.getId())); }
 
     public Response changeNickname(User user, String newNickname) {
         user.setNickname(newNickname);
@@ -50,17 +51,17 @@ public class UserService {
         return Response.OK;
     }
 
-    public Page<GameResultDTO> getGameResults(User user, int page) {
+    public Page<GameResultDTO> getGameResults(int userId, int page) {
         Pageable pageable = PageRequest.of(page-1, PAGE_SIZE);
-        Page<GameResult> results = gameResultRepository.getPageForUserId(user.getId(), pageable);
-        return results.map(gr -> new GameResultDTO(gr, user));
+        Page<GameResult> results = gameResultRepository.getPageForUserId(userId, pageable);
+        return results.map(gr -> new GameResultDTO(gr, userId));
     }
 
-    private int getRank(User user) {
+    private int getRank(int id) {
         if(System.currentTimeMillis() > lastRanksCacheUpdate + CACHE_UPDATE_FREQUENCY) {
             updateRanksCache();
         }
-        return cachedIdRankMap.getOrDefault(user.getId(), 0);
+        return cachedIdRankMap.getOrDefault(id, 0);
     }
 
     public List<UserInfo> getTop10Ranks() {

@@ -2,14 +2,13 @@ package com.gameserver.game;
 
 import org.springframework.stereotype.Component;
 import java.util.*;
-import com.gameserver.entities.User;
 
 @Component
 // thread safe, O(1) contains, deletes after timeout
 public class GameQueue {
 
     private final Queue<Node> queue = new LinkedList<>();
-    private final Map<User,Node> map = new HashMap<>();
+    private final Map<Integer,Node> map = new HashMap<>();
     private final int TIMEOUT = 1000 * 30;
 
     {
@@ -29,53 +28,49 @@ public class GameQueue {
     }
 
 
-    public synchronized void add(User user) {
-        Node node = new Node(user);
-        if(map.containsKey(user)) { throw new AlreadyInQueueException(String.valueOf(node.user)); }
+    public synchronized void add(int id) {
+        Node node = new Node(id);
+        if(map.containsKey(id)) { throw new AlreadyInQueueException(String.valueOf(id)); }
         queue.add(node);
-        map.put(user, node);
+        map.put(id, node);
     }
 
-    public synchronized User poll() {
+    public synchronized int poll() {
         Node polled = queue.poll();
-        map.remove(polled.user);
-        return polled.user;
+        map.remove(polled.userId);
+        return polled.userId;
     }
 
     // calls poll() 2 times to prevent other threads from changing queue between polls
-    public synchronized User[] pollTwo() {
+    public synchronized int[] pollTwo() {
         if(this.size() >= 2) {
-            return new User[]{poll(), poll()};
+            return new int[]{poll(), poll()};
         }
         else { throw new RuntimeException("pollTwo() from size less than 2"); }
     }
 
-    public synchronized User peek() {
-        return queue.peek().user;
-    }
-
-    public synchronized void updateTime(User user) {
-        Node node = map.get(user);
+    public synchronized void updateTime(int id) {
+        Node node = map.get(id);
         if(node != null) { node.time = System.currentTimeMillis(); }
     }
 
-    public synchronized void remove(Node node) {
+    private synchronized void remove(Node node) {
         queue.remove(node);
-        map.remove(node.user);
+        map.remove(node.userId);
     }
 
-    public synchronized boolean remove(User user) {
-        Node node = map.get(user);
+    public synchronized boolean remove(int id) {
+        Node node = map.get(id);
         if(node != null) {
             queue.remove(node);
-            map.remove(node.user);
+            map.remove(node.userId);
             return true;
         }
         return false;
     }
 
-    public synchronized boolean contains(User user) {
-        return map.containsKey(user);
+    public synchronized boolean contains(int id) {
+        return map.containsKey(id);
     }
 
     public synchronized int size() {
@@ -93,11 +88,11 @@ public class GameQueue {
 
 
     private static class Node {
-        final User user;
+        final int userId;
         Long time;
 
-        Node(User user) {
-            this.user = user;
+        Node(int userId) {
+            this.userId = userId;
             this.time = System.currentTimeMillis();
         }
 
@@ -106,17 +101,17 @@ public class GameQueue {
             if(this == o) { return true; }
             if(o == null || getClass() != o.getClass()) { return false; }
             Node other = (Node) o;
-            return user.equals(other.user);
+            return userId == other.userId;
         }
 
         @Override
         public int hashCode() {
-            return user.hashCode();
+            return userId;
         }
 
         @Override
         public String toString() {
-            return String.valueOf(user.getId());
+            return String.valueOf(userId);
         }
     }
 

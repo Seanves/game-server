@@ -8,7 +8,6 @@ import com.gameserver.game.GameSession;
 import com.gameserver.entities.responses.GameResponse;
 import com.gameserver.repositories.GameResultRepository;
 import com.gameserver.repositories.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.util.Collections;
@@ -21,7 +20,7 @@ import org.springframework.web.context.request.async.DeferredResult;
 @Service
 public class GameService {
 
-    private final Map<User,GameSession> userGameMap;
+    private final Map<Integer,GameSession> userIdGameMap;
     private final UserRepository userRepository;
     private final GameResultRepository gameResultRepository;
 
@@ -32,15 +31,15 @@ public class GameService {
     private long NOTIFYING_TIMEOUT;
     private final int TIMEOUT_FREQUENCY = 1000 * 30;
 
-    @Autowired
+
     public GameService(UserRepository userRepository, GameResultRepository gameResultRepository){
-        this.userGameMap = Collections.synchronizedMap( new HashMap<>() );
+        this.userIdGameMap = Collections.synchronizedMap( new HashMap<>() );
         this.userRepository = userRepository;
         this.gameResultRepository = gameResultRepository;
 
         Thread gameTimeoutingThread = new Thread( () -> {
             while(true) {
-                userGameMap.entrySet().removeIf(
+                userIdGameMap.entrySet().removeIf(
                         entry -> {
                                     long startTime = entry.getValue().getStartTime(),
                                          endTime = entry.getValue().getEndTime(),
@@ -60,51 +59,51 @@ public class GameService {
 
     public void createGameSession(User user1, User user2) {
         GameSession newGameSession = new GameSession(user1, user2, this::onSessionEnd);
-        userGameMap.put(user1, newGameSession);
-        userGameMap.put(user2, newGameSession);
+        userIdGameMap.put(user1.getId(), newGameSession);
+        userIdGameMap.put(user2.getId(), newGameSession);
     }
 
-    public PostGameResult leaveGame(User user) {
-        GameSession game = userGameMap.remove(user);
+    public PostGameResult leaveGame(int id) {
+        GameSession game = userIdGameMap.remove(id);
         if(game==null) { return new PostGameResult(false, -1, -1, -1); }
 
-        return game.leave(user.getId());
+        return game.leave(id);
     }
 
-    public boolean isInGame(User user) {
-        return userGameMap.containsKey(user);
+    public boolean isInGame(int id) {
+        return userIdGameMap.containsKey(id);
     }
 
-    public boolean isMyMove(User user) {
-        GameSession game = userGameMap.get(user);
-        return game.isMyMove(user.getId());
+    public boolean isMyMove(int id) {
+        GameSession game = userIdGameMap.get(id);
+        return game.isMyMove(id);
     }
 
 
-    public GameResponse makeMoveChoose(User user, int amount) {
-        GameSession game = userGameMap.get(user);
-        return game!=null ? game.makeMoveChoose(user.getId(), amount) : GameResponse.NOT_IN_GAME;
+    public GameResponse makeMoveChoose(int id, int amount) {
+        GameSession game = userIdGameMap.get(id);
+        return game!=null ? game.makeMoveChoose(id, amount) : GameResponse.NOT_IN_GAME;
     }
 
-    public GameResponse makeMoveGuess(User user, boolean even) {
-        GameSession game = userGameMap.get(user);
-        return game!=null ? game.makeMoveGuess(user.getId(), even) : GameResponse.NOT_IN_GAME;
+    public GameResponse makeMoveGuess(int id, boolean even) {
+        GameSession game = userIdGameMap.get(id);
+        return game!=null ? game.makeMoveGuess(id, even) : GameResponse.NOT_IN_GAME;
     }
 
-    public GameResponse getStatus(User user) {
-        GameSession game = userGameMap.get(user);
-        return game!=null ? new GameResponse(user.getId(), game) : GameResponse.NOT_IN_GAME;
+    public GameResponse getStatus(int id) {
+        GameSession game = userIdGameMap.get(id);
+        return game!=null ? new GameResponse(id, game) : GameResponse.NOT_IN_GAME;
     }
 
-    public Opponent getOpponent(User userTo) {
-        GameSession game = userGameMap.get(userTo);
+    public Opponent getOpponent(int forId) {
+        GameSession game = userIdGameMap.get(forId);
         if(game == null) { return null; }
-        User opponentUser = game.getOpponent(userTo);
+        User opponentUser = game.getOpponent(forId);
         return new Opponent(opponentUser);
     }
 
-    public int getGameId(User user) {
-        GameSession game = userGameMap.get(user);
+    public int getGameId(int userId) {
+        GameSession game = userIdGameMap.get(userId);
         return game!=null ? game.getId() : -1;
     }
 
@@ -148,24 +147,23 @@ public class GameService {
     }
 
 
-    public DeferredResult<Response> waitForMyMove(User user) {
-        GameSession game = userGameMap.get(user);
+    public DeferredResult<Response> waitForMyMove(int userId) {
+        GameSession game = userIdGameMap.get(userId);
         if(game == null) { return null; }
 
         DeferredResult<Response> deferredResult = new DeferredResult<>(NOTIFYING_TIMEOUT, new Response(false, "timeout"));
         CompletableFuture.runAsync( () -> {
-            while(!game.isOver() && !game.isMyMove(user.getId())) {
-                System.out.println(!isMyMove(user));
+            while(!game.isOver() && !game.isMyMove(userId)) {
                 try { Thread.sleep(100); } catch(Exception e) { throw new RuntimeException(e); }
             }
-            deferredResult.setResult(new Response(isMyMove(user)));
+            deferredResult.setResult(new Response(isMyMove(userId)));
         });
         return deferredResult;
     }
 
-    public DeferredResult<Response> waitForMoveChange(User user) {
-        if(!isInGame(user)) { return null; }
-        GameResponse oldResponse = getStatus(user);
+    public DeferredResult<Response> waitForMoveChange(int userId) {
+        if(!isInGame(userId)) { return null; }
+        GameResponse oldResponse = getStatus(userId);
 
         GameSession.MoveType oldMoveType = oldResponse.moveType();
         boolean              oldIsYourMove = oldResponse.yourMove();
@@ -176,9 +174,9 @@ public class GameService {
             while(!response.gameOver() && response.moveType() == oldMoveType
                                        && response.yourMove() == oldIsYourMove) {
                 try { Thread.sleep(500); } catch(Exception e) { throw new RuntimeException(e); }
-                response = getStatus(user);
+                response = getStatus(userId);
             }
-            deferredResult.setResult(new Response(isMyMove(user)));
+            deferredResult.setResult(new Response(isMyMove(userId)));
         });
         return deferredResult;
     }

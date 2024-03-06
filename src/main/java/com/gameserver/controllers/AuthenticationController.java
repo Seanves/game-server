@@ -5,7 +5,6 @@ import com.gameserver.entities.auth.AuthResponse;
 import com.gameserver.entities.auth.UserDTO;
 import com.gameserver.util.UserDTOValidator;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,7 +14,7 @@ public class AuthenticationController {
     private final AuthenticationService authenticationService;
     private final UserDTOValidator userDTOValidator;
 
-    @Autowired
+
     public AuthenticationController(AuthenticationService authenticationService, UserDTOValidator userDTOValidator) {
         this.authenticationService = authenticationService;
         this.userDTOValidator = userDTOValidator;

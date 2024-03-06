@@ -1,60 +1,49 @@
 package com.gameserver.security;
 
-import com.gameserver.services.MyUserDetailsService;
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
+import java.util.Collections;
 
 @Component
 public class JWTFilter extends OncePerRequestFilter {
 
     private final JWTManager jwtManager;
-    private final MyUserDetailsService myUserDetailsService;
 
-    @Autowired
-    public JWTFilter(JWTManager jwtManager, MyUserDetailsService myUserDetailsService) {
+
+    public JWTFilter(JWTManager jwtManager) {
         this.jwtManager = jwtManager;
-        this.myUserDetailsService = myUserDetailsService;
     }
 
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain) throws IOException, ServletException {
         String auth = request.getHeader("Authorization");
-        if(auth != null && !auth.isBlank() && auth.startsWith("Bearer ")) {
+        if(auth != null && auth.startsWith("Bearer ")) {
             String jwt = auth.substring(7);
-            if(jwt.isBlank()) {
+            try {
+                int id = jwtManager.validateAndGetId(jwt);
+                Authentication authToken = new PreAuthenticatedAuthenticationToken(new MyPrincipal(id),
+                                                                                   Collections.emptyList());
+                authToken.setAuthenticated(true);
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            } catch (JWTVerificationException e) {
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Wrong jwt token");
                 return;
             }
-            else {
-                try {
-                    int id = jwtManager.validateAndGetId(jwt);
-                    UserDetails userDetails = myUserDetailsService.loadUserById(id);
-
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                                         userDetails, userDetails.getPassword(), userDetails.getAuthorities());
-
-                    if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                        SecurityContextHolder.getContext().setAuthentication(authToken);
-                    }
-                } catch(Exception e) {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Wrong jwt token");
-                    return;
-                }
-            }
         }
 
-        try {
-            filterChain.doFilter(request, response);
-        } catch (Exception e) { throw new RuntimeException(e); }
+        filterChain.doFilter(request, response);
     }
+
 }

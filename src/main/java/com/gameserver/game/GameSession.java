@@ -172,10 +172,10 @@ public class GameSession {
                                        -1;
     }
 
-    public User getOpponent(User user) {
-        return user.equals(player1.relatedUser) ? player2.relatedUser :
-               user.equals(player2.relatedUser) ? player1.relatedUser :
-                                                  null;
+    public User getOpponent(int id) {
+        return id == player1.getId() ? player2.relatedUser :
+               id == player2.getId() ? player1.relatedUser :
+                                       null;
     }
 
     public boolean isOver() { return wonId != -1; }

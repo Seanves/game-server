@@ -1,9 +1,7 @@
-package com.gameserver.services;
+package com.gameserver.security;
 
 import com.gameserver.entities.User;
 import com.gameserver.repositories.UserRepository;
-import com.gameserver.security.MyUserDetails;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -15,7 +13,7 @@ public class MyUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
-    @Autowired
+
     public MyUserDetailsService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
