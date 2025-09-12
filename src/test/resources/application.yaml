@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate.ddl-auto: create-drop
+    properties.hibernate.show_sql: true
+  output.ansi.enabled: ALWAYS
+
+jwt_secret: test
+# ms
+NOTIFYING_TIMEOUT: 120000
+QUEUE_TIMEOUT: 1000
