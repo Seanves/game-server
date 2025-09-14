@@ -1,27 +1,26 @@
 package net.seanv.stonegameserver.services;
 
-import net.seanv.stonegameserver.entities.GameResult;
+import net.seanv.stonegameserver.dto.responses.GameResponse;
 import net.seanv.stonegameserver.dto.responses.Opponent;
 import net.seanv.stonegameserver.dto.responses.PostGameResult;
 import net.seanv.stonegameserver.dto.responses.Response;
+import net.seanv.stonegameserver.entities.User;
 import net.seanv.stonegameserver.game.GameSession;
-import net.seanv.stonegameserver.dto.responses.GameResponse;
-import net.seanv.stonegameserver.repositories.GameResultRepository;
-import net.seanv.stonegameserver.repositories.UserRepository;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import net.seanv.stonegameserver.entities.User;
 import org.springframework.web.context.request.async.DeferredResult;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 @Service
 public class GameService {
 
-    private final Map<Integer,GameSession> userIdGameMap;
-    private final UserRepository userRepository;
-    private final GameResultRepository gameResultRepository;
+    private final Map<Integer, GameSession> userIdGameMap;
+    private final Function<GameSession, Integer> onSessionEnd;
 
     private final long ENDED_SESSION_TIMEOUT = 1000 * 60,
                        FORCED_SESSION_TIMEOUT = 1000 * 60 * 60 * 2; // 2 hours
@@ -29,12 +28,11 @@ public class GameService {
     private final int TIMEOUT_FREQUENCY = 1000 * 30;
 
 
-    public GameService(UserRepository userRepository, GameResultRepository gameResultRepository,
-                       @Value("${NOTIFYING_TIMEOUT}") long NOTIFYING_TIMEOUT) {
+    public GameService(GameSessionEndService sessionEndService,
+                       @Value("${NOTIFYING_TIMEOUT}") long timeout) {
         this.userIdGameMap = new ConcurrentHashMap<>();
-        this.userRepository = userRepository;
-        this.gameResultRepository = gameResultRepository;
-        this.NOTIFYING_TIMEOUT = NOTIFYING_TIMEOUT;
+        this.onSessionEnd = sessionEndService::onSessionEnd;
+        this.NOTIFYING_TIMEOUT = timeout;
 
         Thread gameTimeoutingThread = new Thread( () -> {
             while (true) {
@@ -57,7 +55,7 @@ public class GameService {
 
 
     public void createGameSession(User user1, User user2) {
-        GameSession newGameSession = new GameSession(user1, user2, this::onSessionEnd);
+        GameSession newGameSession = new GameSession(user1, user2, onSessionEnd);
         userIdGameMap.put(user1.getId(), newGameSession);
         userIdGameMap.put(user2.getId(), newGameSession);
     }
@@ -104,45 +102,6 @@ public class GameService {
     public int getGameId(int userId) {
         GameSession game = userIdGameMap.get(userId);
         return game != null ? game.getId() : -1;
-    }
-
-    private int countRatingChange(User winner, User loser) {
-        // multiplier
-        double m = (double) Math.max(loser.getRating(), 20) / Math.max(winner.getRating(), 20);
-        // multiplier closer to 1 by 80%
-        m = m + (1 - m) * 0.8;
-        // rating change
-        int change = (int)(m * 20);
-        // min 10, max 40
-        change = Math.min(Math.max(change, 10), 40);
-
-        return change;
-    }
-
-    private int onSessionEnd(GameSession game) {
-        User winner = game.getWinner();
-        User loser = game.getLoser();
-
-        int loserRatingBefore = loser.getRating();
-
-        int ratingChange = countRatingChange(winner, loser);
-
-        winner.addRating(ratingChange);
-        loser.subtractRating(ratingChange);
-
-        int loserRatingChange = loser.getRating() - loserRatingBefore;
-
-        winner.incrementWins();
-        winner.incrementGamesPlayed();
-        loser.incrementGamesPlayed();
-
-        GameResult result = new GameResult(winner, loser, ratingChange, loserRatingChange);
-        gameResultRepository.save(result);
-
-        userRepository.save(winner);
-        userRepository.save(loser);
-
-        return ratingChange;
     }
 
 

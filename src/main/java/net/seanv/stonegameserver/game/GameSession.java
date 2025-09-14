@@ -120,8 +120,8 @@ public class GameSession {
         if (endTime != 0) {
             throw new IllegalStateException("ending session second time");
         }
-        endTime = System.currentTimeMillis();
         ratingChange = onSessionEndCallback.apply(this);
+        endTime = System.currentTimeMillis();
     }
 
     private Player getGuessingPlayer() {
@@ -129,12 +129,12 @@ public class GameSession {
     }
 
     public User getWinner() {
-        if (!isOver()) { throw new IllegalStateException("game is not over"); }
+        if (wonId == -1) { throw new IllegalStateException("there is no winner yet"); }
         return getPlayerById(wonId).relatedUser;
     }
 
     public User getLoser() {
-        if (!isOver()) { throw new IllegalStateException("game is not over"); }
+        if (wonId == -1) { throw new IllegalStateException("there is no loser yet"); }
         return getOpponentPlayerForId(wonId).relatedUser;
     }
 
@@ -174,7 +174,9 @@ public class GameSession {
         }
     }
 
-    public boolean isOver() { return wonId != -1; }
+    public boolean isOver() {
+        return endTime != 0;
+    }
 
     @Override
     public String toString() {
