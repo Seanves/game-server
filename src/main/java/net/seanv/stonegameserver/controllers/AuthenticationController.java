@@ -3,7 +3,6 @@ package net.seanv.stonegameserver.controllers;
 import net.seanv.stonegameserver.services.AuthenticationService;
 import net.seanv.stonegameserver.dto.auth.AuthResponse;
 import net.seanv.stonegameserver.dto.auth.UserAuthDTO;
-import net.seanv.stonegameserver.util.UserDTOValidator;
 import jakarta.validation.Valid;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
@@ -12,23 +11,20 @@ import org.springframework.web.bind.annotation.*;
 public class AuthenticationController {
 
     private final AuthenticationService authService;
-    private final UserDTOValidator userDTOValidator;
 
 
-    public AuthenticationController(AuthenticationService authService, UserDTOValidator userDTOValidator) {
+    public AuthenticationController(AuthenticationService authService) {
         this.authService = authService;
-        this.userDTOValidator = userDTOValidator;
     }
 
 
     @PostMapping("/register")
     public AuthResponse register(@RequestBody @Valid UserAuthDTO userAuthDto, BindingResult bindingResult) {
-        userDTOValidator.validate(userAuthDto, bindingResult);
         if (bindingResult.hasErrors()) {
-            return new AuthResponse(false, "Errors: " + bindingResult.getAllErrors()
-                                                                        .stream()
-                                                                        .map(error -> error.getDefaultMessage())
-                                                                        .toList(), null);
+            return new AuthResponse(false, "Validation errors: " + bindingResult.getFieldErrors()
+                                                        .stream()
+                                                        .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                                                        .toList(), null);
         }
         return authService.register(userAuthDto);
     }

@@ -33,18 +33,18 @@ public class AuthenticationTest {
 
     @BeforeEach
     public void beforeEach() {
-        testUserAuthDTO = new UserAuthDTO("login", "password", "nickname");
-    }
-
-    @AfterAll
-    public static void afterAll(@Autowired UserRepository userRepository) {
-        userRepository.deleteAll();
+        testUserAuthDTO = new UserAuthDTO("login", "passwordU1!", "nickname");
     }
 
     @AfterEach
     void afterEach(@Autowired UserRepository userRepository) {
         userRepository.findByLogin("login")
                         .ifPresent(userRepository::delete);
+    }
+
+    @AfterAll
+    public static void afterAll(@Autowired UserRepository userRepository) {
+        userRepository.deleteAll();
     }
 
 
@@ -60,10 +60,14 @@ public class AuthenticationTest {
     public void testRegistrationValidation() throws Exception {
         UserAuthDTO[] invalidUserAuthDTOs = {
                 new UserAuthDTO("","",""),
-                new UserAuthDTO("same_", "same_", "password"),
+                new UserAuthDTO("same_", "same_", "nickname"),
                 new UserAuthDTO("login", "same_", "same_"),
-                new UserAuthDTO("has space", "password" ,"nickname"),
-                new UserAuthDTO("log", "pass", "name") // too short
+                new UserAuthDTO("has space", "passwordU1" ,"nickname"),
+                new UserAuthDTO("log", "pU1", "name"), // too short
+                new UserAuthDTO("login", "passwordU1", "CAPS_NiCkNaMe"),
+                new UserAuthDTO(null, "passwordU1", "nickname"),
+                new UserAuthDTO("login", null, "nickname"),
+                new UserAuthDTO("login", "passwordU1", null)
         };
 
         for (UserAuthDTO invalidUserAuthDTO : invalidUserAuthDTOs) {
@@ -71,6 +75,28 @@ public class AuthenticationTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(asJsonString(invalidUserAuthDTO)))
                             .andExpect(jsonPath("success").value(false));
+        }
+    }
+
+    @Test
+    public void testPasswordValidation() throws Exception {
+        // required only english letters, digits and !@#$%^&*-_
+        // at least one uppercase letter and digit, length 8-20
+        UserAuthDTO[] invalidUserAuthDTOs = {
+                new UserAuthDTO("login","qwerty","nickname"),
+                new UserAuthDTO("login","qwertyU","nickname"),
+                new UserAuthDTO("login","qwerty1","nickname"),
+                new UserAuthDTO("login","qwertyU1 ","nickname"),
+                new UserAuthDTO("login","qwertyU1Й","nickname"),
+                new UserAuthDTO("login","U1longlonglonglonglong","nickname"),
+                new UserAuthDTO("login", "pU1(){}[]\"':;?=+/","nickname"),
+        };
+
+        for (UserAuthDTO invalidUserAuthDTO : invalidUserAuthDTOs) {
+            mockMvc.perform(MockMvcRequestBuilders.post("/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(asJsonString(invalidUserAuthDTO)))
+                    .andExpect(jsonPath("success").value(false));
         }
     }
 
@@ -83,7 +109,7 @@ public class AuthenticationTest {
                         .content(asJsonString(testUserAuthDTO)))
                         .andExpect(jsonPath("success").value(false))
                         .andExpect(jsonPath("message")
-                                .value(Matchers.containsString("Login already taken")));
+                                .value(Matchers.containsString("Login is already taken")));
     }
 
     @Test

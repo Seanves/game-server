@@ -6,7 +6,6 @@ import net.seanv.stonegameserver.dto.responses.Response;
 import net.seanv.stonegameserver.dto.responses.UserInfo;
 import net.seanv.stonegameserver.security.AuthUserContext;
 import net.seanv.stonegameserver.services.UserService;
-import net.seanv.stonegameserver.util.UserDTOValidator;
 import jakarta.validation.Validator;
 import org.springframework.data.domain.Page;
 import org.springframework.validation.BindingResult;
@@ -20,16 +19,13 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
-    private final UserDTOValidator userDTOValidator;
-    private final Validator defaultValidator;
+    private final Validator validator;
     private final AuthUserContext auth;
 
 
-    public UserController(UserService userService, UserDTOValidator userDTOValidator,
-                          Validator defaultValidator, AuthUserContext auth) {
+    public UserController(UserService userService, Validator validator, AuthUserContext auth) {
         this.userService = userService;
-        this.userDTOValidator = userDTOValidator;
-        this.defaultValidator = defaultValidator;
+        this.validator = validator;
         this.auth = auth;
     }
 
@@ -51,14 +47,15 @@ public class UserController {
 
     @PostMapping("/changeNickname")
     public Response changeNickname(@RequestBody String newNickname, BindingResult br) {
-        var violations = defaultValidator.validateValue(UserAuthDTO.class, "nickname", newNickname);
+        var violations = validator.validateValue(UserAuthDTO.class, "nickname", newNickname);
         violations.forEach( v -> br.addError(new FieldError("", "nickname", v.getMessage())));
 
-        userDTOValidator.validateNickname(newNickname, br);
-
-        if(br.hasErrors()) {
-            return new Response(false, "Errors: " + br.getAllErrors()
-                                 .stream().map(error -> error.getDefaultMessage()).toList());
+        if (br.hasErrors()) {
+            return new Response(false, br.getAllErrors()
+                                                .stream()
+                                                .map(e -> e.getDefaultMessage())
+                                                .toList()
+                                                .toString());
         }
 
         userService.changeNickname(auth.loadUser(), newNickname);
