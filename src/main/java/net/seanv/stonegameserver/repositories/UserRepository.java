@@ -14,6 +14,9 @@ public interface UserRepository extends CrudRepository<User,Integer> {
     boolean existsByLogin(String login);
     boolean existsById(int id);
 
+    @Query("SELECT nickname FROM User WHERE id = :id")
+    Optional<String> findNicknameById(int id);
+
     @Query(value = """
             SELECT rank
             FROM (
