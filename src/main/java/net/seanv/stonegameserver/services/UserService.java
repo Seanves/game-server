@@ -38,7 +38,7 @@ public class UserService {
     }
 
     public Page<GameResultDTO> getGameResults(int userId, int page) {
-        Pageable pageable = PageRequest.of(page-1, RESULT_PAGE_SIZE);
+        Pageable pageable = PageRequest.of(page, RESULT_PAGE_SIZE);
         Page<GameResult> results = gameResultRepository.getResultsPage(userId, pageable);
 
         return results.map(gr -> new GameResultDTO(gr, userId));

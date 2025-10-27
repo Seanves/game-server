@@ -45,7 +45,7 @@ public class TestCliClient {
         } while (token == null);
 
         System.out.println(postRequest("/userInfo", null, UserInfo.class));
-        System.out.println(postRequest("/results", 1, String.class));
+        System.out.println(postRequest("/results", 0, String.class));
 
         // search if not in game, otherwise reconnect
         if (!postRequest("/userStatus", UserStatus.class).inGame()) {
@@ -63,23 +63,18 @@ public class TestCliClient {
             }
 
             // accept/decline game
-            do {
-                String choose = scanNext("\nGame found, accept[Y/N]");
-                if (choose.equals("Y") || choose.equals("y")) {
-                    postRequest("/accept", Response.class);
-                    break;
-                }
-                else if (choose.equals("N") || choose.equals("n")) {
+            String choose = scanNext("\nGame found, accept[Y/N]");
+            switch (choose) {
+                case "Y", "y" -> postRequest("/accept", Response.class);
+                case "N", "n" -> {
                     postRequest("/decline", Response.class);
                     System.exit(0);
                 }
-            } while (postRequest("/userStatus", UserStatus.class).inAcceptance());
+                default -> throw new IllegalArgumentException(choose);
+            }
 
-            do {
-                System.out.println("Waiting other player to accept...");
-                notifyingPostRequest("/notifyWhenNotInAcceptance");
-//                Thread.sleep(1000);
-            } while (postRequest("/userStatus", UserStatus.class).inAcceptance());
+            System.out.println("Waiting other player to accept...");
+            notifyingPostRequest("/notifyWhenNotInAcceptance");
 
 
             if (!postRequest("/userStatus", UserStatus.class).inGame()) {
@@ -140,11 +135,11 @@ public class TestCliClient {
                             System.out.println("Opponent didn't guess, +" + (after-before) + " points");
                         }
 
-                        notifyingPostRequest("/notifyWhenTurnChanged ");
+                        notifyingPostRequest("/notifyWhenTurnChanged");
                     } else { System.out.println(subresponse.message()); }
                 }
 
-            } else { notifyingPostRequest("/notifyWhenTurnChanged "); }
+            } else { notifyingPostRequest("/notifyWhenTurnChanged"); }
 
 
             if (response.gameOver()) {
@@ -213,9 +208,7 @@ public class TestCliClient {
         ResponseEntity<R> responseEntity =
                 restTemplate.postForEntity(SERVER_ADDRESS + path, requestEntity, responseClass);
 
-        R body = responseEntity.getBody();
-
-        return body;
+        return responseEntity.getBody();
     }
 
     // for long polling

@@ -26,7 +26,6 @@ public class UserAuthDTO {
     private String login;
 
     @NotNull
-    @Size(min = 5, max = 30, message = "Password must be from 5 to 30 characters long")
     @StrongPassword
     private String password;
 

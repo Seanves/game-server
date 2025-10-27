@@ -123,7 +123,7 @@ public class UserServiceTest {
 
     @Test
     public void testGameResultContent() {
-        List<GameResultDTO> results = service.getGameResults(user1.getId(), 1).get().toList();
+        List<GameResultDTO> results = service.getGameResults(user1.getId(), 0).get().toList();
 
         assertSame(3, results.size());
 

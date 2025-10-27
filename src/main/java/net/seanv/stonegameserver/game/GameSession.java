@@ -5,7 +5,6 @@ import net.seanv.stonegameserver.entities.User;
 import net.seanv.stonegameserver.dto.responses.PostGameResult;
 import lombok.Getter;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 
 @Getter
 public class GameSession {
@@ -21,7 +20,7 @@ public class GameSession {
 
     private TurnType turnType;
 
-    private final Function<GameSession,Integer> onSessionEndCallback;
+    private final GameCallback callback;
     private final long startTime;
     private long endTime;
 
@@ -49,33 +48,33 @@ public class GameSession {
     }
 
 
-    public GameSession(User user1, User user2, Function<GameSession,Integer> onSessionEndCallback) {
+    public GameSession(User user1, User user2, GameCallback callback) {
         player1 = new Player(user1);
         player2 = new Player(user2);
         choosingPlayer = player1;
         turnType = TurnType.CHOOSING;
         wonId = -1;
         startTime = System.currentTimeMillis();
-        this.onSessionEndCallback = onSessionEndCallback;
+        this.callback = callback;
         id = idCounter.getAndIncrement();
     }
 
 
     public GameResponse makeChoosingTurn(int id, int amount) {
-        if (isOver())                         { return new GameResponse(false, "Game ended, " + (id==wonId ? "you won" : "you lose"), id, this); }
+        if (isOver())                         { return new GameResponse(false, "Game ended, " + (id == wonId ? "you won" : "you lose"), id, this); }
         if (id != choosingPlayer.getId()
             || turnType != TurnType.CHOOSING) { return new GameResponse(false, "Not your choosing turn", id, this); }
         if (amount <= 0)                      { return new GameResponse(false, "Chosen less or equal to zero", id, this); }
         if (amount > choosingPlayer.points)   { return new GameResponse(false, "Chosen more than have", id, this); }
 
         chosenNumber = amount;
-        turnType = TurnType.GUESSING;
+        changeTurnType(TurnType.GUESSING);
 
         return new GameResponse(id, this);
     }
 
     public GameResponse makeGuessingTurn(int id, boolean even) {
-        if (isOver())                         { return new GameResponse(false, "Game ended, " + (id== wonId ? "you won" : "you lose"), id, this); }
+        if (isOver())                         { return new GameResponse(false, "Game ended, " + (id == wonId ? "you won" : "you lose"), id, this); }
         if (id != getGuessingPlayer().getId()
             || turnType != TurnType.GUESSING) { return new GameResponse(false, "Not your guessing turn", id, this); }
 
@@ -90,12 +89,16 @@ public class GameSession {
         }
 
         choosingPlayer = getGuessingPlayer();
-        turnType = TurnType.CHOOSING;
+        changeTurnType(TurnType.CHOOSING);
 
         checkIfGameOver();
         return new GameResponse(id, this);
     }
 
+    private void changeTurnType(TurnType type) {
+        turnType = type;
+        callback.onTurnChange(this);
+    }
 
     private void checkIfGameOver() {
         if (player1.points <= 0) {
@@ -120,7 +123,7 @@ public class GameSession {
         if (endTime != 0) {
             throw new IllegalStateException("ending session second time");
         }
-        ratingChange = onSessionEndCallback.apply(this);
+        ratingChange = callback.onSessionEnd(this);
         endTime = System.currentTimeMillis();
     }
 
@@ -138,12 +141,17 @@ public class GameSession {
         return getOpponentPlayerForId(wonId).relatedUser;
     }
 
+    public User getTurningUser() {
+        return getTurningPlayer().relatedUser;
+    }
+
+    public User[] getUsers() {
+        return new User[] { player1.relatedUser, player2.relatedUser };
+    }
+
     public boolean isMyTurn(int id) {
         if (isOver()) { return false; }
-
-        return turnType == TurnType.CHOOSING && id == choosingPlayer.getId()
-            || turnType == TurnType.GUESSING && id == getGuessingPlayer().getId();
-
+        return getTurningPlayer().getId() == id;
     }
 
     public int getPointsById(int id) {
@@ -172,6 +180,13 @@ public class GameSession {
         } else {
             throw new IllegalArgumentException("id " + id);
         }
+    }
+
+    private Player getTurningPlayer() {
+        return switch (turnType) {
+            case CHOOSING -> choosingPlayer;
+            case GUESSING -> getGuessingPlayer();
+        };
     }
 
     public boolean isOver() {

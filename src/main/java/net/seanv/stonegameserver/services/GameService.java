@@ -6,33 +6,39 @@ import net.seanv.stonegameserver.dto.responses.PostGameResult;
 import net.seanv.stonegameserver.dto.responses.Response;
 import net.seanv.stonegameserver.entities.User;
 import net.seanv.stonegameserver.game.GameSession;
+import net.seanv.stonegameserver.game.GameCallback;
+import net.seanv.stonegameserver.util.DeferredResultsHolder;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.async.DeferredResult;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 
 @Service
 public class GameService {
 
     private final Map<Integer, GameSession> userIdGameMap;
-    private final Function<GameSession, Integer> onSessionEnd;
+    private final GameCallback callback;
+    private final DeferredResultsHolder<Response> waitingTurnChangeResults;
+    private final DeferredResultsHolder<Response> waitingOwnTurnResults;
 
     private final long ENDED_SESSION_TIMEOUT = 1000 * 60,
                        FORCED_SESSION_TIMEOUT = 1000 * 60 * 60 * 2; // 2 hours
-    private final long NOTIFYING_TIMEOUT;
     private final int TIMEOUT_FREQUENCY = 1000 * 30;
 
 
-    public GameService(GameSessionEndService sessionEndService,
-                       @Value("${NOTIFYING_TIMEOUT}") long timeout) {
+    public GameService(GameSessionEndService sessionEndService) {
         this.userIdGameMap = new ConcurrentHashMap<>();
-        this.onSessionEnd = sessionEndService::onSessionEnd;
-        this.NOTIFYING_TIMEOUT = timeout;
+        this.waitingTurnChangeResults = new DeferredResultsHolder<>(Response.TIMEOUT);
+        this.waitingOwnTurnResults = new DeferredResultsHolder<>(Response.TIMEOUT);
+        this.callback = new GameCallback(
+                game -> {
+                    cancelWaitingTurns(game);
+                    return sessionEndService.onSessionEnd(game);
+                },
+                this::onTurnChange
+        );
 
         Thread gameTimeoutingThread = new Thread( () -> {
             while (true) {
@@ -55,7 +61,7 @@ public class GameService {
 
 
     public void createGameSession(User user1, User user2) {
-        GameSession newGameSession = new GameSession(user1, user2, onSessionEnd);
+        GameSession newGameSession = new GameSession(user1, user2, callback);
         userIdGameMap.put(user1.getId(), newGameSession);
         userIdGameMap.put(user2.getId(), newGameSession);
     }
@@ -104,38 +110,43 @@ public class GameService {
         return game != null ? game.getId() : -1;
     }
 
+    private void onTurnChange(GameSession game) {
+        for (User user : game.getUsers()) {
+            waitingTurnChangeResults.complete(user.getId(), Response.OK);
+        }
 
-    public DeferredResult<Response> waitForMyTurn(int userId) {
-        GameSession game = userIdGameMap.get(userId);
-        if (game == null) { return null; }
-
-        DeferredResult<Response> deferredResult = new DeferredResult<>(NOTIFYING_TIMEOUT, new Response(false, "timeout"));
-        CompletableFuture.runAsync( () -> {
-            while (!game.isOver() && !game.isMyTurn(userId)) {
-                try { Thread.sleep(100); } catch (Exception e) { throw new RuntimeException(e); }
-            }
-            deferredResult.setResult(new Response(isMyTurn(userId)));
-        });
-        return deferredResult;
+        int turningUserId = game.getTurningUser().getId();
+        waitingOwnTurnResults.complete(turningUserId, Response.OK);
     }
 
-    public DeferredResult<Response> waitForTurnChange(int userId) {
-        if (!isInGame(userId)) { return null; }
-        GameResponse oldResponse = getGameStatus(userId);
+    private void cancelWaitingTurns(GameSession game) {
+        for (User user : game.getUsers()) {
+            waitingOwnTurnResults.complete(user.getId(), new Response(false));
+            waitingTurnChangeResults.complete(user.getId(), new Response(false));
+        }
+    }
 
-        GameSession.TurnType oldTurnType = oldResponse.turnType();
-        boolean              oldIsYourTurn = oldResponse.yourTurn();
 
-        DeferredResult<Response> deferredResult = new DeferredResult<>(NOTIFYING_TIMEOUT, new Response(false, "timeout"));
-        CompletableFuture.runAsync( () -> {
-            GameResponse response = oldResponse;
-            while (!response.gameOver() && response.turnType() == oldTurnType
-                                        && response.yourTurn() == oldIsYourTurn) {
-                try { Thread.sleep(500); } catch (Exception e) { throw new RuntimeException(e); }
-                response = getGameStatus(userId);
-            }
-            deferredResult.setResult(new Response(isMyTurn(userId)));
-        });
-        return deferredResult;
+    public DeferredResult<Response> waitOwnTurn(int userId) {
+        GameSession game = userIdGameMap.get(userId);
+
+        if (game == null || game.isOver()) {
+            return waitingOwnTurnResults.createAndSet(new Response(false));
+        }
+        if (game.isMyTurn(userId)) {
+            return waitingOwnTurnResults.createAndSet(new Response(true));
+        }
+
+        return waitingOwnTurnResults.tryPut(userId, new Response(false));
+    }
+
+    public DeferredResult<Response> waitTurnChange(int userId) {
+        GameSession game = userIdGameMap.get(userId);
+
+        if (game == null || game.isOver()) {
+            return waitingTurnChangeResults.createAndSet(new Response(false));
+        }
+
+        return waitingTurnChangeResults.tryPut(userId, new Response(false));
     }
 }

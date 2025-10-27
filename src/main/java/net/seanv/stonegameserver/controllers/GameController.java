@@ -57,12 +57,12 @@ public class GameController {
 
     @PostMapping("/notifyWhenMyTurn")
     public DeferredResult<Response> notifyWhenMyTurn() {
-        return gameService.waitForMyTurn(auth.getId());
+        return gameService.waitOwnTurn(auth.getId());
     }
 
     @PostMapping("/notifyWhenTurnChanged")
     public DeferredResult<Response> notifyWhenTurnChanged() {
-        return gameService.waitForTurnChange(auth.getId());
+        return gameService.waitTurnChange(auth.getId());
     }
 
 
