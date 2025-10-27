@@ -3,6 +3,7 @@ package net.seanv.stonegameserver.services;
 import net.seanv.stonegameserver.entities.User;
 import net.seanv.stonegameserver.dto.responses.Response;
 import net.seanv.stonegameserver.repositories.UserRepository;
+import net.seanv.stonegameserver.RandomTestUserCreator;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,9 +24,9 @@ public class MatchmakingServiceTest {
 
     @BeforeAll
     public static void beforeAll(@Autowired UserRepository userRepository) {
-        user1 = new User("mchmk_test_1", "password1", "test_user_1");
-        user2 = new User("mchmk_test_2", "password2", "test_user_2");
-        user3 = new User("mchmk_test_3", "password3", "test_user_3");
+        user1 = RandomTestUserCreator.create();
+        user2 = RandomTestUserCreator.create();
+        user3 = RandomTestUserCreator.create();
 
         user1 = userRepository.save(user1);
         user2 = userRepository.save(user2);

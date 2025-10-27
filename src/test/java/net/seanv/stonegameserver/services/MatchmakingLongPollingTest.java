@@ -1,11 +1,11 @@
 package net.seanv.stonegameserver.services;
 
+import net.seanv.stonegameserver.RandomTestUserCreator;
 import net.seanv.stonegameserver.entities.User;
 import net.seanv.stonegameserver.repositories.UserRepository;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -18,8 +18,8 @@ public class MatchmakingLongPollingTest {
 
     @BeforeAll
     public static void beforeAll(@Autowired UserRepository repository) {
-        user1 = repository.save(new User(UUID.randomUUID().toString().substring(0, 19), " ", " "));
-        user2 = repository.save(new User(UUID.randomUUID().toString().substring(0, 19), " ", " "));
+        user1 = repository.save(RandomTestUserCreator.create());
+        user2 = repository.save(RandomTestUserCreator.create());
     }
 
     @AfterEach

@@ -6,6 +6,7 @@ import net.seanv.stonegameserver.dto.responses.Opponent;
 import net.seanv.stonegameserver.game.GameSession;
 import net.seanv.stonegameserver.repositories.GameResultRepository;
 import net.seanv.stonegameserver.repositories.UserRepository;
+import net.seanv.stonegameserver.RandomTestUserCreator;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,8 +27,8 @@ public class GameServiceTest {
 
     @BeforeAll
     public static void beforeAll(@Autowired UserRepository userRepository) {
-        user1 = new User("unique_login1", "password1", "test_user_1");
-        user2 = new User("unique_login2", "password2", "test_user_2");
+        user1 = RandomTestUserCreator.create();
+        user2 = RandomTestUserCreator.create();
 
         user1 = userRepository.save(user1);
         user2 = userRepository.save(user2);

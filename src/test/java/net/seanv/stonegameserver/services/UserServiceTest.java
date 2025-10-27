@@ -6,6 +6,7 @@ import net.seanv.stonegameserver.dto.responses.GameResultDTO;
 import net.seanv.stonegameserver.dto.responses.UserInfo;
 import net.seanv.stonegameserver.repositories.GameResultRepository;
 import net.seanv.stonegameserver.repositories.UserRepository;
+import net.seanv.stonegameserver.RandomTestUserCreator;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -30,19 +31,19 @@ public class UserServiceTest {
     public static void beforeAll(@Autowired UserRepository userRepository,
                                  @Autowired GameResultRepository gameResultRepository) {
 
-        user1 = new User("login1", "password", "name1");
+        user1 = RandomTestUserCreator.create();
         user1.setRating(80);
         user1 = userRepository.save(user1);
 
-        user2 = new User("login2", "password", "name2");
+        user2 = RandomTestUserCreator.create();
         user2.setRating(10);
         user2 = userRepository.save(user2);
 
-        user3 = new User("login3", "password", "name3");
+        user3 = RandomTestUserCreator.create();
         user3.setRating(110);
         user3 = userRepository.save(user3);
 
-        user4 = new User("login4", "password", "name4");
+        user4 = RandomTestUserCreator.create();
         user4.setRating(10);
         user4 = userRepository.save(user4);
 
@@ -100,8 +101,7 @@ public class UserServiceTest {
 
     @Test
     public void testChangingNickname(@Autowired UserRepository repository) {
-        User user = new User("login_", "password", "name_to_change");
-        user = repository.save(user);
+        User user = repository.save(RandomTestUserCreator.create());
 
         service.changeNickname(user, "new_nickname");
         Optional<User> optional = repository.findById(user.getId());
