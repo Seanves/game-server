@@ -32,18 +32,22 @@ public class UserServiceTest {
                                  @Autowired GameResultRepository gameResultRepository) {
 
         user1 = RandomTestUserCreator.create();
+        user1.setNickname("a");
         user1.setRating(80);
         user1 = userRepository.save(user1);
 
         user2 = RandomTestUserCreator.create();
+        user2.setNickname("b");
         user2.setRating(10);
         user2 = userRepository.save(user2);
 
         user3 = RandomTestUserCreator.create();
+        user3.setNickname("c");
         user3.setRating(110);
         user3 = userRepository.save(user3);
 
         user4 = RandomTestUserCreator.create();
+        user4.setNickname("d");
         user4.setRating(10);
         user4 = userRepository.save(user4);
 

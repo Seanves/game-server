@@ -8,15 +8,15 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DeferredResultsHolder<T> {
     private final Map<Integer, DeferredResult<T>> map = new ConcurrentHashMap<>();
     private final T onTimeoutValue;
+    private final long TIMEOUT;
 
-    private static final long TIMEOUT = 120000; // 2 min
-
-    public DeferredResultsHolder(T onTimeoutValue) {
+    public DeferredResultsHolder(long timeout, T onTimeoutValue) {
+        TIMEOUT = timeout;
         this.onTimeoutValue = onTimeoutValue;
     }
 
     /**
-     * Store {@link DeferredResult} for a given key if key is absent,
+     * Stores {@link DeferredResult} for a given key if key is absent,
      * otherwise returns completed with {@code onDuplicateValue}.
      * @return always new {@link DeferredResult}
      */

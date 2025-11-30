@@ -8,6 +8,14 @@ spring:
   output.ansi.enabled: ALWAYS
 
 jwt_secret: test
+
 # ms
-NOTIFYING_TIMEOUT: 120000
-QUEUE_TIMEOUT: 1000
+timeout_check_delay:
+  game_session: 30000
+
+timeout:
+  game_session_after_end: 60000
+  game_session_forced: 7200000  # 2 hours
+  game_queue: 1000
+  game_acceptance: 1000
+  long_polling: 120000

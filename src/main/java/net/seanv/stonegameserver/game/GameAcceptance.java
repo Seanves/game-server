@@ -1,12 +1,7 @@
 package net.seanv.stonegameserver.game;
 
-import net.seanv.stonegameserver.entities.User;
 import lombok.Getter;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import net.seanv.stonegameserver.entities.User;
 
 
 public class GameAcceptance {
@@ -20,16 +15,9 @@ public class GameAcceptance {
                     user1declined,
                     user2declined;
 
-    private final ScheduledFuture<?> scheduledFuture;
-    private static final long TIMEOUT = 30; // seconds
-
-    public GameAcceptance(User user1, User user2, Consumer<GameAcceptance> deleteAcceptanceCallback) {
+    public GameAcceptance(User user1, User user2) {
         this.user1 = user1;
         this.user2 = user2;
-
-        ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
-        scheduledFuture = executorService.schedule(
-                () -> deleteAcceptanceCallback.accept(this), TIMEOUT, TimeUnit.SECONDS);
     }
 
 

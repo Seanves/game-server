@@ -115,12 +115,24 @@ public class MatchmakingServiceTest {
 
     @Test
     @SneakyThrows
-    public void testTimeoutFromQueue(@Value("${QUEUE_TIMEOUT}") int timeout) {
+    public void testTimeoutFromQueue(@Value("${timeout.game_queue}") int timeout) {
         service.addInQueue(user3);
 
-        Thread.sleep((int) (timeout * 1.5));
+        Thread.sleep((long) (timeout * 1.5));
 
         assertFalse(service.isInQueue(user3.getId()));
+    }
+
+    @Test
+    @SneakyThrows
+    public void testTimeoutFromAcceptance(@Value("${timeout.game_acceptance}") int timeout) {
+        assertTrue(service.isInAcceptance(user1.getId()));
+        assertTrue(service.isInAcceptance(user2.getId()));
+
+        Thread.sleep((long) (timeout * 1.5));
+
+        assertFalse(service.isInAcceptance(user1.getId()));
+        assertFalse(service.isInAcceptance(user2.getId()));
     }
 
     @Test

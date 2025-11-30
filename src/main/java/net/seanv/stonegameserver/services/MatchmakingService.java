@@ -7,6 +7,7 @@ import net.seanv.stonegameserver.game.GameAcceptance;
 import net.seanv.stonegameserver.game.GameQueue;
 import net.seanv.stonegameserver.util.DeferredResultsHolder;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.async.DeferredResult;
@@ -14,6 +15,9 @@ import org.springframework.web.context.request.async.DeferredResult;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class MatchmakingService {
@@ -21,16 +25,25 @@ public class MatchmakingService {
     private final GameQueue queue;
     private final GameService gameService;
     private final Map<Integer, GameAcceptance> userIdAcceptanceMap;
+
     private final DeferredResultsHolder<Response> gameFoundWaitingResults;
     private final DeferredResultsHolder<Response> inAcceptanceWaitingResults;
+    private final ScheduledExecutorService acceptanceDeleteExecutor;
+
+    private final int ACCEPTANCE_TIMEOUT;
 
 
-    public MatchmakingService(GameQueue queue, GameService gameService) {
+    public MatchmakingService(GameQueue queue,
+                              GameService gameService,
+                              @Value("${timeout.long_polling}") int defResTimeout,
+                              @Value("${timeout.game_acceptance}") int acceptanceTimeout) {
         this.queue = queue;
         this.gameService = gameService;
+        this.ACCEPTANCE_TIMEOUT = acceptanceTimeout;
         this.userIdAcceptanceMap = new ConcurrentHashMap<>();
-        this.gameFoundWaitingResults = new DeferredResultsHolder<>(Response.TIMEOUT);
-        this.inAcceptanceWaitingResults = new DeferredResultsHolder<>(Response.TIMEOUT);
+        this.gameFoundWaitingResults = new DeferredResultsHolder<>(defResTimeout, Response.TIMEOUT);
+        this.inAcceptanceWaitingResults = new DeferredResultsHolder<>(defResTimeout, Response.TIMEOUT);
+        this.acceptanceDeleteExecutor = Executors.newSingleThreadScheduledExecutor();
     }
 
 
@@ -56,9 +69,11 @@ public class MatchmakingService {
     public boolean isInQueue(int id) { return queue.contains(id); }
 
     private void createAcceptance(User user1, User user2) {
-        GameAcceptance acceptance = new GameAcceptance(user1, user2, this::deleteAcceptance);
+        GameAcceptance acceptance = new GameAcceptance(user1, user2);
         userIdAcceptanceMap.put(user1.getId(), acceptance);
         userIdAcceptanceMap.put(user2.getId(), acceptance);
+        acceptanceDeleteExecutor.schedule(() -> deleteAcceptance(acceptance),
+                                            ACCEPTANCE_TIMEOUT, TimeUnit.MILLISECONDS);
     }
 
     private void deleteAcceptance(GameAcceptance acceptance) {

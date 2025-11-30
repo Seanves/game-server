@@ -4,6 +4,7 @@ import net.seanv.stonegameserver.entities.User;
 import lombok.EqualsAndHashCode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.Queue;
@@ -38,24 +39,20 @@ public class GameQueue {
 
     }
 
-    public GameQueue(@Value("${QUEUE_TIMEOUT}") int timeout) {
-        TIMEOUT = timeout;
 
-        Thread timeoutThread = new Thread( () -> {
-            while (true) {
-                try { Thread.sleep(TIMEOUT / 3); } catch (InterruptedException e) { throw new RuntimeException(e); }
-                synchronized (this) {
-                    for (Node node: map.values()) {
-                        if (System.currentTimeMillis() > node.time + TIMEOUT) {
-                            remove(node);
-                        }
-                    }
-                }
-            }
-        });
-        timeoutThread.start();
+    public GameQueue(@Value("${timeout.game_queue}") int timeout) {
+        TIMEOUT = timeout;
     }
 
+
+    @Scheduled(fixedDelayString = "#{${timeout.game_queue} / 3}")
+    public synchronized void checkTimeout() {
+        for (Node node: map.values()) {
+            if (System.currentTimeMillis() > node.time + TIMEOUT) {
+                remove(node);
+            }
+        }
+    }
 
     public synchronized void add(User user) {
         Node node = new Node(user);
@@ -111,11 +108,6 @@ public class GameQueue {
 
     public synchronized boolean isEmpty() {
         return queue.isEmpty();
-    }
-
-    @Override
-    public String toString() {
-        return queue + " " + map;
     }
 
 }

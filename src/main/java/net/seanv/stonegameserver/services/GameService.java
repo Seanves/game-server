@@ -9,6 +9,8 @@ import net.seanv.stonegameserver.game.GameSession;
 import net.seanv.stonegameserver.game.GameCallback;
 import net.seanv.stonegameserver.util.DeferredResultsHolder;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.async.DeferredResult;
 
@@ -23,15 +25,17 @@ public class GameService {
     private final DeferredResultsHolder<Response> waitingTurnChangeResults;
     private final DeferredResultsHolder<Response> waitingOwnTurnResults;
 
-    private final long ENDED_SESSION_TIMEOUT = 1000 * 60,
-                       FORCED_SESSION_TIMEOUT = 1000 * 60 * 60 * 2; // 2 hours
-    private final int TIMEOUT_FREQUENCY = 1000 * 30;
+    @Value("${timeout.game_session_after_end}")
+    private long ENDED_SESSION_TIMEOUT;
+    @Value("${timeout.game_session_forced}")
+    private long FORCED_SESSION_TIMEOUT;
 
 
-    public GameService(GameSessionEndService sessionEndService) {
+    public GameService(GameSessionEndService sessionEndService,
+                       @Value("${timeout.long_polling}") int timeout) {
         this.userIdGameMap = new ConcurrentHashMap<>();
-        this.waitingTurnChangeResults = new DeferredResultsHolder<>(Response.TIMEOUT);
-        this.waitingOwnTurnResults = new DeferredResultsHolder<>(Response.TIMEOUT);
+        this.waitingTurnChangeResults = new DeferredResultsHolder<>(timeout, Response.TIMEOUT);
+        this.waitingOwnTurnResults = new DeferredResultsHolder<>(timeout, Response.TIMEOUT);
         this.callback = new GameCallback(
                 game -> {
                     cancelWaitingTurns(game);
@@ -39,24 +43,21 @@ public class GameService {
                 },
                 this::onTurnChange
         );
+    }
 
-        Thread gameTimeoutingThread = new Thread( () -> {
-            while (true) {
-                userIdGameMap.entrySet().removeIf(
-                        entry -> {
-                                    long startTime = entry.getValue().getStartTime(),
-                                         endTime = entry.getValue().getEndTime(),
-                                         currentTime = System.currentTimeMillis();
+    @Scheduled(fixedDelayString = "${timeout_check_delay.game_session}")
+    public void checkTimeout() {
+        userIdGameMap.entrySet().removeIf(
+                entry -> {
+                    GameSession game = entry.getValue();
+                    long time = System.currentTimeMillis();
 
-    /* timeout after session end */ return entry.getValue().isOver()
-                                    && currentTime > endTime + ENDED_SESSION_TIMEOUT
-               /* forced timeout */ || currentTime > startTime + FORCED_SESSION_TIMEOUT;
-                        }
-                );
-                try { Thread.sleep(TIMEOUT_FREQUENCY); } catch (InterruptedException e) { throw new RuntimeException(e); }
-            }
-        });
-        gameTimeoutingThread.start();
+                    boolean afterEnd = game.isOver() && time > game.getEndTime() + ENDED_SESSION_TIMEOUT;
+                    boolean forced = time > game.getStartTime() + FORCED_SESSION_TIMEOUT;
+
+                    return afterEnd || forced;
+                }
+        );
     }
 
 
