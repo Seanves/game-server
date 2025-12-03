@@ -34,14 +34,14 @@ public class GameSession {
     }
 
     private static class Player {
-        User relatedUser;
+        final User relatedUser;
+        final int ratingAtStart;
         int points;
-        int ratingAtStart;
 
         Player(User relatedUser) {
             this.relatedUser = relatedUser;
-            this.points = 10;
             this.ratingAtStart = relatedUser.getRating();
+            this.points = 10;
         }
 
         int getId() { return relatedUser.getId(); }
@@ -60,8 +60,9 @@ public class GameSession {
     }
 
 
-    public GameResponse makeChoosingTurn(int id, int amount) {
-        if (isOver())                         { return new GameResponse(false, "Game ended, " + (id == wonId ? "you won" : "you lose"), id, this); }
+    public synchronized GameResponse makeChoosingTurn(int id, int amount) {
+        if (isOver())                         { return new GameResponse(false, "Game ended, "
+                                                            + (id == wonId ? "you won" : "you lose"), id, this); }
         if (id != choosingPlayer.getId()
             || turnType != TurnType.CHOOSING) { return new GameResponse(false, "Not your choosing turn", id, this); }
         if (amount <= 0)                      { return new GameResponse(false, "Chosen less or equal to zero", id, this); }
@@ -73,8 +74,9 @@ public class GameSession {
         return new GameResponse(id, this);
     }
 
-    public GameResponse makeGuessingTurn(int id, boolean even) {
-        if (isOver())                         { return new GameResponse(false, "Game ended, " + (id == wonId ? "you won" : "you lose"), id, this); }
+    public synchronized GameResponse makeGuessingTurn(int id, boolean even) {
+        if (isOver())                         { return new GameResponse(false, "Game ended, "
+                                                            + (id == wonId ? "you won" : "you lose"), id, this); }
         if (id != getGuessingPlayer().getId()
             || turnType != TurnType.GUESSING) { return new GameResponse(false, "Not your guessing turn", id, this); }
 
@@ -95,12 +97,12 @@ public class GameSession {
         return new GameResponse(id, this);
     }
 
-    private void changeTurnType(TurnType type) {
+    private synchronized void changeTurnType(TurnType type) {
         turnType = type;
         callback.onTurnChange(this);
     }
 
-    private void checkIfGameOver() {
+    private synchronized void checkIfGameOver() {
         if (player1.points <= 0) {
             wonId = player2.getId();
             endSession();
@@ -110,7 +112,7 @@ public class GameSession {
         }
     }
 
-    public PostGameResult leave(int id) {
+    public synchronized PostGameResult leave(int id) {
         if (!isOver()) {
             wonId = getOpponentPlayerForId(id).getId();
             endSession();
@@ -119,7 +121,7 @@ public class GameSession {
         return new PostGameResult(id == wonId, player.relatedUser.getRating(), player.ratingAtStart);
     }
 
-    private void endSession() {
+    private synchronized void endSession() {
         if (endTime != 0) {
             throw new IllegalStateException("ending session second time");
         }
@@ -127,34 +129,34 @@ public class GameSession {
         endTime = System.currentTimeMillis();
     }
 
-    private Player getGuessingPlayer() {
+    private synchronized Player getGuessingPlayer() {
         return choosingPlayer == player1 ? player2 : player1;
     }
 
-    public User getWinner() {
+    public synchronized User getWinner() {
         if (wonId == -1) { throw new IllegalStateException("there is no winner yet"); }
         return getPlayerById(wonId).relatedUser;
     }
 
-    public User getLoser() {
+    public synchronized User getLoser() {
         if (wonId == -1) { throw new IllegalStateException("there is no loser yet"); }
         return getOpponentPlayerForId(wonId).relatedUser;
-    }
-
-    public User getTurningUser() {
-        return getTurningPlayer().relatedUser;
     }
 
     public User[] getUsers() {
         return new User[] { player1.relatedUser, player2.relatedUser };
     }
 
-    public boolean isMyTurn(int id) {
+    public synchronized User getTurningUser() {
+        return getTurningPlayer().relatedUser;
+    }
+
+    public synchronized boolean isMyTurn(int id) {
         if (isOver()) { return false; }
         return getTurningPlayer().getId() == id;
     }
 
-    public int getPointsById(int id) {
+    public synchronized int getPointsById(int id) {
         return getPlayerById(id).points;
     }
 
@@ -182,26 +184,15 @@ public class GameSession {
         }
     }
 
-    private Player getTurningPlayer() {
+    private synchronized Player getTurningPlayer() {
         return switch (turnType) {
             case CHOOSING -> choosingPlayer;
             case GUESSING -> getGuessingPlayer();
         };
     }
 
-    public boolean isOver() {
+    public synchronized boolean isOver() {
         return endTime != 0;
-    }
-
-    @Override
-    public String toString() {
-        return "GameSession{" + "\n  " +
-                "player1.points=" + player1.points + ",\n  " +
-                "player2.points=" + player2.points + ",\n  " +
-                "choosingPlayer.id=" + choosingPlayer.getId() + ",\n  " +
-                "chosenNumber=" + chosenNumber + ",\n  " +
-                "turnType=" + turnType + "\n" +
-                '}';
     }
 
 }
