@@ -2,8 +2,8 @@ package net.seanv.stonegameserver.services;
 
 import net.seanv.stonegameserver.entities.GameResult;
 import net.seanv.stonegameserver.entities.User;
-import net.seanv.stonegameserver.dto.responses.GameResultDTO;
-import net.seanv.stonegameserver.dto.responses.UserInfo;
+import net.seanv.stonegameserver.dto.responses.PersonalizedGameResult;
+import net.seanv.stonegameserver.dto.responses.UserDto;
 import net.seanv.stonegameserver.repositories.GameResultRepository;
 import net.seanv.stonegameserver.repositories.UserRepository;
 import net.seanv.stonegameserver.RandomTestUserCreator;
@@ -53,9 +53,9 @@ public class UserServiceTest {
 
 
         GameResult[] results = {
-            new GameResult(user1, user2, 0, 0),
-            new GameResult(user1, user2, 0, 0),
-            new GameResult(user2, user1, 0, 0)
+            new GameResult(user1, 0, user2, 0),
+            new GameResult(user1, 0, user2, 0),
+            new GameResult(user2, 0, user1, 0)
         };
 
         for (var result : results) {
@@ -73,34 +73,34 @@ public class UserServiceTest {
 
     @Test
     public void testTop10order() {
-        List<UserInfo> ranks = service.getTop10Ranks();
-        List<UserInfo> expected = List.of(new UserInfo(user3, 1), new UserInfo(user1, 2),
-                                          new UserInfo(user2, 3), new UserInfo(user4, 4));
+        List<UserDto> ranks = service.getTop10Ranks();
+        List<UserDto> expected = List.of(new UserDto(user3, 1), new UserDto(user1, 2),
+                                          new UserDto(user2, 3), new UserDto(user4, 4));
         assertIterableEquals(expected, ranks);
     }
 
     @Test
     public void testGetRank() {
-        Assertions.assertEquals(1, service.getUserInfo(user3).getRank());
-        Assertions.assertEquals(2, service.getUserInfo(user1).getRank());
-        Assertions.assertEquals(3, service.getUserInfo(user2).getRank());
-        Assertions.assertEquals(4, service.getUserInfo(user4).getRank());
+        Assertions.assertEquals(1, service.userToDto(user3).getRank());
+        Assertions.assertEquals(2, service.userToDto(user1).getRank());
+        Assertions.assertEquals(3, service.userToDto(user2).getRank());
+        Assertions.assertEquals(4, service.userToDto(user4).getRank());
     }
 
     @Test
-    public void testUserInfoCorrectInformation() {
-        UserInfo info = service.getUserInfo(user1);
+    public void testUserDtoCorrectness() {
+        UserDto dto = service.userToDto(user1);
 
-        assertEquals(user1.getNickname(),    info.getNickname());
-        assertEquals(user1.getRating(),      info.getRating());
-        assertEquals(user1.getWinrate(),     info.getWinrate());
-        assertEquals(user1.getWins(),        info.getWins());
-        assertEquals(user1.getGamesPlayed(), info.getGamesPlayed());
+        assertEquals(user1.getNickname(),    dto.getNickname());
+        assertEquals(user1.getRating(),      dto.getRating());
+        assertEquals(user1.getWinrate(),     dto.getWinrate());
+        assertEquals(user1.getWins(),        dto.getWins());
+        assertEquals(user1.getGamesPlayed(), dto.getGamesPlayed());
     }
 
     @Test
-    public void testExceptionForInvalidUserInfo() {
-        assertThrows(IllegalArgumentException.class, () -> service.getUserInfo(new User()));
+    public void testExceptionForInvalidUserDto() {
+        assertThrows(IllegalArgumentException.class, () -> service.userToDto(new User()));
     }
 
     @Test
@@ -116,9 +116,9 @@ public class UserServiceTest {
 
     @Test
     public void testGameResultsSize() {
-        Page<GameResultDTO> user1Results = service.getGameResults(user1.getId(), 1);
-        Page<GameResultDTO> user2Results = service.getGameResults(user2.getId(), 1);
-        Page<GameResultDTO> user3Results = service.getGameResults(user3.getId(), 1);
+        Page<PersonalizedGameResult> user1Results = service.getGameResults(user1.getId(), 1);
+        Page<PersonalizedGameResult> user2Results = service.getGameResults(user2.getId(), 1);
+        Page<PersonalizedGameResult> user3Results = service.getGameResults(user3.getId(), 1);
 
         assertEquals(3, user1Results.getTotalElements());
         assertEquals(3, user2Results.getTotalElements());
@@ -127,7 +127,7 @@ public class UserServiceTest {
 
     @Test
     public void testGameResultContent() {
-        List<GameResultDTO> results = service.getGameResults(user1.getId(), 0).get().toList();
+        List<PersonalizedGameResult> results = service.getGameResults(user1.getId(), 0).get().toList();
 
         assertSame(3, results.size());
 
@@ -136,7 +136,7 @@ public class UserServiceTest {
         assertTrue(results.get(2).isWin());
 
         results.forEach(r ->
-                assertEquals(user2.getNickname(), r.getOpponentNickname()));
+                assertEquals(user2.getNickname(), r.getOpponent().nickname()));
     }
 
 }

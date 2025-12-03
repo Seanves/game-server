@@ -41,19 +41,19 @@ public class GameSessionEndService {
         User winner = game.getWinner();
         User loser = game.getLoser();
 
+        int winnerRatingBefore = winner.getRating();
         int loserRatingBefore = loser.getRating();
+
         int ratingChange = countRatingChange(winner, loser);
 
         winner.addRating(ratingChange);
         loser.subtractRating(ratingChange);
 
-        int loserRatingChange = loser.getRating() - loserRatingBefore;
-
         winner.incrementWins();
         winner.incrementGamesPlayed();
         loser.incrementGamesPlayed();
 
-        GameResult result = new GameResult(winner, loser, ratingChange, loserRatingChange);
+        GameResult result = new GameResult(winner, winnerRatingBefore, loser, loserRatingBefore);
         gameResultRepository.save(result);
 
         userRepository.save(winner);

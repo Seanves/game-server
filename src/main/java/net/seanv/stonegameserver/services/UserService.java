@@ -1,9 +1,9 @@
 package net.seanv.stonegameserver.services;
 
 import net.seanv.stonegameserver.entities.GameResult;
-import net.seanv.stonegameserver.dto.responses.GameResultDTO;
+import net.seanv.stonegameserver.dto.responses.PersonalizedGameResult;
 import net.seanv.stonegameserver.entities.User;
-import net.seanv.stonegameserver.dto.responses.UserInfo;
+import net.seanv.stonegameserver.dto.responses.UserDto;
 import net.seanv.stonegameserver.repositories.GameResultRepository;
 import net.seanv.stonegameserver.repositories.UserRepository;
 import org.springframework.data.domain.Page;
@@ -28,8 +28,8 @@ public class UserService {
     }
 
 
-    public UserInfo getUserInfo(User user) {
-        return new UserInfo(user, getRank(user.getId()));
+    public UserDto userToDto(User user) {
+        return new UserDto(user, getRank(user.getId()));
     }
 
     public void changeNickname(User user, String newNickname) {
@@ -37,22 +37,22 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public Page<GameResultDTO> getGameResults(int userId, int page) {
+    public Page<PersonalizedGameResult> getGameResults(int userId, int page) {
         Pageable pageable = PageRequest.of(page, RESULT_PAGE_SIZE);
         Page<GameResult> results = gameResultRepository.getResultsPage(userId, pageable);
 
-        return results.map(gr -> new GameResultDTO(gr, userId));
+        return results.map(gr -> new PersonalizedGameResult(gr, userId));
     }
 
     private int getRank(int id) {
         return userRepository.getRank(id).orElseThrow( () -> new IllegalArgumentException("id: " + id) );
     }
 
-    public List<UserInfo> getTop10Ranks() {
+    public List<UserDto> getTop10Ranks() {
         List<User> ranks = userRepository.getTop10Ranks();
 
         return IntStream.range(0, ranks.size())
-                        .mapToObj(i -> new UserInfo(ranks.get(i), i+1))
+                        .mapToObj(i -> new UserDto(ranks.get(i), i+1))
                         .toList();
     }
 

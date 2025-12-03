@@ -1,9 +1,9 @@
 package net.seanv.stonegameserver.controllers;
 
 import net.seanv.stonegameserver.dto.auth.UserAuthDTO;
-import net.seanv.stonegameserver.dto.responses.GameResultDTO;
+import net.seanv.stonegameserver.dto.responses.PersonalizedGameResult;
 import net.seanv.stonegameserver.dto.responses.Response;
-import net.seanv.stonegameserver.dto.responses.UserInfo;
+import net.seanv.stonegameserver.dto.responses.UserDto;
 import net.seanv.stonegameserver.security.AuthUserContext;
 import net.seanv.stonegameserver.services.UserService;
 import jakarta.validation.Validator;
@@ -31,17 +31,17 @@ public class UserController {
 
 
     @PostMapping("/userInfo")
-    public UserInfo userInfo() {
-        return userService.getUserInfo(auth.loadUser());
+    public UserDto userInfo() {
+        return userService.userToDto(auth.loadUser());
     }
 
     @PostMapping("/results")
-    public Page<GameResultDTO> gameResults(@RequestBody int page) {
+    public Page<PersonalizedGameResult> gameResults(@RequestBody int page) {
         return userService.getGameResults(auth.getId(), page);
     }
 
     @PostMapping("/top10")
-    public List<UserInfo> top10Ranks() {
+    public List<UserDto> top10Ranks() {
         return userService.getTop10Ranks();
     }
 

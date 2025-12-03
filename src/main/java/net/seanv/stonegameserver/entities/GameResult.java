@@ -26,18 +26,31 @@ public class GameResult {
     @JoinColumn(name = "loser_id", nullable = false)
     private User loser;
 
-    private short winnerRatingChange;
-    private short loserRatingChange;
+    private int winnerRatingBefore;
+    private int winnerRatingAfter;
+    private int loserRatingBefore;
+    private int loserRatingAfter;
 
     @CreationTimestamp
     private Timestamp time;
 
 
-    public GameResult(User winner, User loser, int winnerChange, int loserChange) {
+    public GameResult(User winner, int winnerRatingBefore, User loser, int loserRatingBefore) {
         this.winner = winner;
         this.loser = loser;
-        this.winnerRatingChange = (short) winnerChange;
-        this.loserRatingChange = (short) loserChange;
+        this.winnerRatingBefore = winnerRatingBefore;
+        this.winnerRatingAfter = winner.getRating();
+        this.loserRatingBefore = loserRatingBefore;
+        this.loserRatingAfter = loser.getRating();
+    }
+
+
+    public int getWinnerRatingChange() {
+        return winnerRatingAfter - winnerRatingBefore;
+    }
+
+    public int getLoserRatingChange() {
+        return loserRatingAfter - loserRatingBefore;
     }
 
 }

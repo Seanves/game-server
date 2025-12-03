@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class UserInfo {
+public class UserDto {
 
     private String nickname;
     private int rating;
@@ -15,7 +15,7 @@ public class UserInfo {
     private int gamesPlayed;
     private int wins;
 
-    public UserInfo(User user, int rank) {
+    public UserDto(User user, int rank) {
         this.nickname = user.getNickname();
         this.rating = user.getRating();
         this.winrate = user.getWinrate();

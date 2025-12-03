@@ -44,7 +44,7 @@ public class TestCliClient {
             System.out.println(response.message());
         } while (token == null);
 
-        System.out.println(postRequest("/userInfo", null, UserInfo.class));
+        System.out.println(postRequest("/userInfo", null, UserDto.class));
         System.out.println(postRequest("/results", 0, String.class));
 
         // search if not in game, otherwise reconnect
