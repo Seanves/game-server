@@ -4,6 +4,7 @@ import net.seanv.stonegameserver.entities.GameResult;
 import net.seanv.stonegameserver.entities.User;
 import net.seanv.stonegameserver.dto.responses.PersonalizedGameResult;
 import net.seanv.stonegameserver.dto.responses.UserDto;
+import net.seanv.stonegameserver.mappers.UserMapper;
 import net.seanv.stonegameserver.repositories.GameResultRepository;
 import net.seanv.stonegameserver.repositories.UserRepository;
 import net.seanv.stonegameserver.RandomTestUserCreator;
@@ -72,10 +73,10 @@ public class UserServiceTest {
     }
 
     @Test
-    public void testTop10order() {
+    public void testTop10order(@Autowired UserMapper mapper) {
         List<UserDto> ranks = service.getTop10Ranks();
-        List<UserDto> expected = List.of(new UserDto(user3, 1), new UserDto(user1, 2),
-                                          new UserDto(user2, 3), new UserDto(user4, 4));
+        List<UserDto> expected = List.of(mapper.toDto(user3, 1), mapper.toDto(user1, 2),
+                                         mapper.toDto(user2, 3), mapper.toDto(user4, 4));
         assertIterableEquals(expected, ranks);
     }
 
